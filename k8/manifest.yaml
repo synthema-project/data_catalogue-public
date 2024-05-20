@@ -28,7 +28,7 @@ spec:
           env:
           - name: DATABASE_FILE
             value: "/data/central_node.db"
-          command: ["python", "/src/main.py"]
+          command: ["python", "main.py"]
           resources:
             limits:
               cpu: "1"
