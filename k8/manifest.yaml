@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: data-annotation
+  name: data-catalogue
   labels:
-    app: data-annotation
+    app: data-catalogue
     version: v0.1.0
     env: dev
     team: synthema
-    component: data-annotation
+    component: data-catalogue
   namespace: synthema-dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: data-annotation
+      app: data-catalogue
   template:
     metadata:
       labels:
