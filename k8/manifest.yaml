@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-annotation
+  labels:
+    app: data-annotation
+    version: v0.1.0
+    env: dev
+    team: synthema
+    component: data-annotation
+  namespace: synthema-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-annotation
+  template:
+    metadata:
+      labels:
+        app: data-catalogue
+    spec:
+      containers:
+        - name: data-catalogue-container
+          image: harbor.synthema.rid-intrasoft.eu/synthema/data-catalogue:DOCKER_TAG
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          command: ["python", "main.py"]
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+      imagePullSecrets:
+        - name: harbor-cred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-catalogue-svc
+  namespace: synthema-dev
+spec:
+  type: NodePort
+  selector:
+    app: data-catalogue
+  ports:
+    - port: 80
+      protocol: TCP
