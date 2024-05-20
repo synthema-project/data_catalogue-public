@@ -31,7 +31,7 @@ spec:
           command: ["python", "main.py"]
           resources:
             limits:
-              cpu: "1"
+              cpu: "4"
               memory: "1Gi"
       imagePullSecrets:
         - name: harbor-cred
