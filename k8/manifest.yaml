@@ -27,7 +27,7 @@ spec:
             - containerPort: 80
           env:
             - name: DATABASE_FILE
-              value: "/data/central_node.db"
+              value: "/app/data/central_node.db"
           command: ["python", "main.py"]
           resources:
             limits:
@@ -46,5 +46,6 @@ spec:
   selector:
     app: data-catalogue
   ports:
-    - port: 80
+    - port: 8003
+      targetPort: 80
       protocol: TCP
