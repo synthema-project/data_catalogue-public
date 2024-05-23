@@ -64,6 +64,8 @@ async def retrieve_dataset_info(node: str, disease: str):
 @app.get("/metadata", tags=["data-catalogue"])
 async def get_all_datasets():
     datasets = await fetch_all_datasets()
+    if not datasets:
+        raise HTTPException(status_code=404, detail="No datasets found")
     return {"datasets": datasets}
 
 @app.delete("/metadata", tags=["data-catalogue"])

@@ -3,9 +3,9 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 import os
 
-DATABASE_FILE = "/mnt/c/users/lenovo/desktop/fastapi/SYNTHEMA/central_node.db"
-#DATABASE_FILE = "./central_node.db"
-
+#DATABASE_FILE = "/mnt/c/users/lenovo/desktop/fastapi/SYNTHEMA/central_node.db"
+DATABASE_FILE = "/app/data/central_node.db"
+DATABASE_FILE = os.getenv("DATABASE_PATH", "/app/data/database/central_node.db")
 class NodeDatasetInfo(BaseModel):
     node: str
     path: str
@@ -141,10 +141,14 @@ def remove_dataset_info_from_database(node: str, disease: str, path:str)->bool:
 async def fetch_all_datasets():
     # Function to fetch all datasets and their metadata from SQLite database
     conn = create_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT node, path, disease FROM datasets")
-    rows = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT node, path, disease FROM datasets")
+        rows = cursor.fetchall()
+    except sqlite3.Error as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
 
     datasets = []
     for row in rows:
