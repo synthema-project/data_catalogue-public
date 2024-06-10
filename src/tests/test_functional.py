@@ -1,10 +1,13 @@
 from fastapi.testclient import TestClient
-from main import app, create_connection
+from main import app, create_connection, DATABASE_PATH
+import os
 
 client = TestClient(app)
 
 def setup_module(module):
     # Setup database before tests
+    if os.path.exists(DATABASE_PATH):
+        os.remove(DATABASE_PATH)
     conn = create_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -21,12 +24,8 @@ def setup_module(module):
 
 def teardown_module(module):
     # Teardown database after tests
-    conn = create_connection()
-    cursor = conn.cursor()
-    cursor.execute("DROP TABLE datasets")
-    conn.commit()
-    cursor.close()
-    conn.close()
+    if os.path.exists(DATABASE_PATH):
+        os.remove(DATABASE_PATH)
 
 def test_save_dataset_info():
     response = client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
@@ -35,7 +34,7 @@ def test_save_dataset_info():
 
 def test_retrieve_dataset_info():
     client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
-    response = client.get("/metadata/test_disease", params={"node": "test_node"})
+    response = client.get("/metadata/AML", params={"node": "NODE1"})
     assert response.status_code == 200
     data = response.json()
     assert data["node"] == "NODE1"
@@ -53,6 +52,6 @@ def test_delete_dataset():
     client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
     response = client.delete("/metadata", params={"node": "NODE1", "disease": "AML", "path": "./NODE1"})
     assert response.status_code == 200
-    assert response.json() == {"message": "Dataset 'test_path' deleted successfully."}
-    response = client.get("/metadata/test_disease", params={"node": "NODE1"})
+    assert response.json() == {"message": "Dataset './NODE1' deleted successfully."}
+    response = client.get("/metadata/AML", params={"node": "NODE1"})
     assert response.status_code == 404
