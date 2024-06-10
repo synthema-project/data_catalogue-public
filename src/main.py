@@ -7,7 +7,7 @@ from data_catalogue_utils import NodeDatasetInfo, save_dataset_info_to_database,
 app = FastAPI()
 
 @app.post("/metadata", tags=["data-catalogue"])
-def save_dataset_info_to_database(node_dataset: NodeDatasetInfo):
+async def save_dataset_info_to_database(node_dataset: NodeDatasetInfo):
     try:
         # Connect to the database
         conn = create_connection()
