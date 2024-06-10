@@ -21,7 +21,7 @@ pipeline {
             steps {
                 echo "***** Building Image *****"
                 // Build the image and push a test tag to the remote repository
-                sh 'docker image build -t ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test src/Dockerfile'
+                sh 'docker image build -t ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test src'
                 sh 'docker image push ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test'
             }
         }
