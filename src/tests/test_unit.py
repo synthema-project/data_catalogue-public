@@ -1,5 +1,5 @@
 import pytest
-from utils import create_connection, save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, NodeDatasetInfo
+from data_catalogue_utils import create_connection, save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, NodeDatasetInfo
 
 DATABASE_FILE = "./test_central_node.db"
 
