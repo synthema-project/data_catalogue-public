@@ -32,7 +32,7 @@ def teardown_module(module):
 def test_save_dataset_info():
     response = client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
     assert response.status_code == 200
-    assert response.json() == {'Metadata uploaded successfully'}
+    assert response.json() == {"message": "Metadata uploaded successfully"}
 
 def test_retrieve_dataset_info():
     client.post("/metadata", json={"node": "test_node", "path": "test_path", "disease": "test_disease"})
