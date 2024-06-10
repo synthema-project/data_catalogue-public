@@ -30,7 +30,7 @@ def teardown_module(module):
     conn.close()
 
 def test_save_dataset_info():
-    response = client.post("/metadata", json={"node": "test_node", "path": "test_path", "disease": "test_disease"})
+    response = client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
     assert response.status_code == 200
     assert response.json() == {'Metadata uploaded successfully'}
 
