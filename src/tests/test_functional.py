@@ -1,13 +1,14 @@
 from fastapi.testclient import TestClient
-from main import app, create_connection, DATABASE_PATH
+from main import app, create_connection, 
+from data_catalogue_utils import DATABASE_FILE
 import os
 
 client = TestClient(app)
 
 def setup_module(module):
     # Setup database before tests
-    if os.path.exists(DATABASE_PATH):
-        os.remove(DATABASE_PATH)
+    if os.path.exists(DATABASE_FILE):
+        os.remove(DATABASE_FILE)
     conn = create_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -24,8 +25,8 @@ def setup_module(module):
 
 def teardown_module(module):
     # Teardown database after tests
-    if os.path.exists(DATABASE_PATH):
-        os.remove(DATABASE_PATH)
+    if os.path.exists(DATABASE_FILE):
+        os.remove(DATABASE_FILE)
 
 def test_save_dataset_info():
     response = client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
