@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app, create_connection, 
+from main import app, create_connection
 from data_catalogue_utils import DATABASE_FILE
 import os
 
