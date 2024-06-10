@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
-from data_catalogue_utils import create_connection
+from main import app, create_connection
 
 client = TestClient(app)
 
@@ -36,7 +35,7 @@ def test_save_dataset_info():
 
 def test_retrieve_dataset_info():
     client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
-    response = client.get("/metadata/test_disease", params={"node": "NODE1"})
+    response = client.get("/metadata/test_disease", params={"node": "test_node"})
     assert response.status_code == 200
     data = response.json()
     assert data["node"] == "NODE1"
