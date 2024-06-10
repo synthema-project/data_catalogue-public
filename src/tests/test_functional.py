@@ -35,25 +35,25 @@ def test_save_dataset_info():
     assert response.json() == {"message": "Metadata uploaded successfully"}
 
 def test_retrieve_dataset_info():
-    client.post("/metadata", json={"node": "test_node", "path": "test_path", "disease": "test_disease"})
-    response = client.get("/metadata/test_disease", params={"node": "test_node"})
+    client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
+    response = client.get("/metadata/test_disease", params={"node": "NODE1"})
     assert response.status_code == 200
     data = response.json()
-    assert data["node"] == "test_node"
-    assert data["path"] == "test_path"
-    assert data["disease"] == "test_disease"
+    assert data["node"] == "NODE1"
+    assert data["path"] == "./NODE1"
+    assert data["disease"] == "AML"
 
 def test_get_all_datasets():
-    client.post("/metadata", json={"node": "test_node", "path": "test_path", "disease": "test_disease"})
+    client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
     response = client.get("/metadata")
     assert response.status_code == 200
     datasets = response.json()["datasets"]
     assert len(datasets) > 0
 
 def test_delete_dataset():
-    client.post("/metadata", json={"node": "test_node", "path": "test_path", "disease": "test_disease"})
-    response = client.delete("/metadata", params={"node": "test_node", "disease": "test_disease", "path": "test_path"})
+    client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
+    response = client.delete("/metadata", params={"node": "NODE1", "disease": "AML", "path": "./NODE1"})
     assert response.status_code == 200
     assert response.json() == {"message": "Dataset 'test_path' deleted successfully."}
-    response = client.get("/metadata/test_disease", params={"node": "test_node"})
+    response = client.get("/metadata/test_disease", params={"node": "NODE1"})
     assert response.status_code == 404
