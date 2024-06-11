@@ -49,7 +49,7 @@ def test_get_all_datasets():
     datasets = response.json()["datasets"]
     assert len(datasets) > 0
 
-def test_delete_dataset(client):
+def test_delete_dataset():
     client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
     response = client.delete("/metadata", params={"node": "NODE1", "disease": "AML", "path": "./NODE1"})
     assert response.status_code == 200
