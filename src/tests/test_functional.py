@@ -50,9 +50,12 @@ def test_get_all_datasets():
     assert len(datasets) > 0
 
 def test_delete_dataset():
-    client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
+    response = client.post("/metadata", json={"node": "NODE1", "path": "./NODE1", "disease": "AML"})
+    assert response.status_code == 200
+    
     response = client.delete("/metadata", params={"node": "NODE1", "disease": "AML", "path": "./NODE1"})
     assert response.status_code == 200
     assert response.json() == {"message": "Dataset './NODE1' deleted successfully."}
+    
     response = client.get("/metadata/AML", params={"node": "NODE1"})
     assert response.status_code == 404
