@@ -6,6 +6,10 @@ from data_catalogue_utils import NodeDatasetInfo, save_dataset_info_to_database,
 
 app = FastAPI()
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @app.post("/metadata", tags=["data-catalogue"])
 async def save_dataset_info_to_database(node_dataset: NodeDatasetInfo):
     try:
@@ -77,8 +81,10 @@ async def delete_dataset(node: str, disease: str, path: str):
         else:
             raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
     except HTTPException as e:
+        logger.error(f"HTTPException: {e.detail}")
         raise e
     except Exception as e:
+        logger.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 @app.get("/healthcheck")
