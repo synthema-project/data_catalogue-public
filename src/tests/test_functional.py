@@ -54,5 +54,5 @@ def test_delete_dataset():
     response = client.delete("/metadata", params={"node": "NODE1", "disease": "AML", "path": "./NODE1"})
     assert response.status_code == 200
     assert response.json() == {"message": "Dataset './NODE1' deleted successfully."}
-    #response = client.get("/metadata/AML", params={"node": "NODE1"})
-    #assert response.status_code == 404
+    response = client.get("/metadata/AML", params={"node": "NODE1"})
+    assert response.status_code == 404
