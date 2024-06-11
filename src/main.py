@@ -49,9 +49,12 @@ async def save_dataset_info_to_database(node_dataset: NodeDatasetInfo):
 async def retrieve_dataset_info(node: str, disease: str):
     try:
         # Retrieve dataset information from the database
+        print("get_dataset_info_from_database(node, disease)")
         dataset_info = get_dataset_info_from_database(node, disease)
+        print("get_dataset_info_from_database(node, disease)")
 
         if dataset_info is None:
+            print("dataset_info is None")
             raise HTTPException(status_code=404, detail=f"No dataset found in the database for node: {node} and disease: {disease}")
 
         # Return the dataset information
@@ -64,6 +67,7 @@ async def retrieve_dataset_info(node: str, disease: str):
         }
 
     except Exception as e:
+        print("EXCEPTION")
         raise HTTPException(status_code=500, detail=f"Error retrieving dataset info: {str(e)}")
 
 @app.get("/metadata", tags=["data-catalogue"])
