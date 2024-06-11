@@ -32,7 +32,7 @@ async def save_dataset_info_to_database(node_dataset: NodeDatasetInfo):
         cursor.close()
         conn.close()
 
-        return {'Metadata uploaded successfully'}
+        return {"message": 'Metadata uploaded successfully'}
 
     except Exception as e:
         print("Error saving dataset info to database:", e)
