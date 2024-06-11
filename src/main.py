@@ -68,7 +68,9 @@ async def retrieve_dataset_info(node: str, disease: str):
             #"number of samples": dataset_info[3],
             #"number of features": dataset_info[4]
         }
-
+    except HTTPException as e:
+        # Re-raise the HTTPException to let FastAPI handle it properly
+        raise e
     except Exception as e:
         print("EXCEPTION")
         logger.error(f"Error retrieving dataset info: {str(e)}")
