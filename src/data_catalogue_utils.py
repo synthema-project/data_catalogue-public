@@ -100,7 +100,7 @@ def get_dataset_info_from_database(node: str, disease: str):
 
     except Exception as e:
         print("Error retrieving dataset info from database:", e)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=404, detail="Internal Server Error")
 
 # Remove the dataset info from the database
 def remove_dataset_info_from_database(node: str, disease: str, path:str)->bool:
