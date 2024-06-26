@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 import uvicorn
 import logging
-from data_catalogue_utils import NodeDatasetInfo, save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, create_connection
+from data_catalogue_utils import NodeDatasetInfo, RemoveDatasetObject, save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, create_connection
 
 app = FastAPI()
 
@@ -80,13 +80,13 @@ async def get_all_datasets():
     return {"datasets": datasets}
 
 @app.delete("/metadata", tags=["data-catalogue"])
-async def delete_dataset(node: str, disease: str, path: str):
+async def delete_dataset(removedatasetobject: RemoveDatasetObject):#node: str, disease: str, path: str):
     try:
-        result = remove_dataset_info_from_database(node=node, disease=disease, path=path)
+        result = remove_dataset_info_from_database(node=removedatasetobject.node, disease=removedatasetobject.disease, path=removedatasetobject.path)
         if result:
-            return {"message": f"Dataset '{path}' deleted successfully."}
+            return {"message": f"Dataset '{removedatasetobject.path}' deleted successfully."}
         else:
-            raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
+            raise HTTPException(status_code=404, detail=f"Dataset '{removedatasetobject.path}' not found.")
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
         raise e
