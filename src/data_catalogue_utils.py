@@ -6,6 +6,7 @@ import os
 #DATABASE_FILE = "/mnt/c/users/lenovo/desktop/fastapi/SYNTHEMA/central_node.db"
 DATABASE_FILE = "/app/data/central_node.db"
 DATABASE_FILE = os.getenv("DATABASE_PATH", "/app/data/database/central_node.db")
+
 class NodeDatasetInfo(BaseModel):
     node: str
     path: str
@@ -14,6 +15,11 @@ class NodeDatasetInfo(BaseModel):
     #ncols: int
     #provider: str
     #iid: str
+
+class RemoveDatasetObject(BaseModel):
+    node: str
+    disease: str
+    path: str
 
 ###########################################
 # CONNECTION BETWEEN FASTAPI AND SQLITE #
