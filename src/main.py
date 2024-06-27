@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from typing import List
 import uvicorn
@@ -80,8 +80,9 @@ async def get_all_datasets():
     return {"datasets": datasets}
 
 @app.delete("/metadata", tags=["data-catalogue"])
-async def delete_dataset(removedatasetobject: RemoveDatasetObject):#node: str, disease: str, path: str):
+async def delete_dataset(removedatasetobject: RemoveDatasetObject, request:Request):#node: str, disease: str, path: str):
 #async def delete_dataset(node: str=Form(...), disease: str=Form(...), path: str=Form(...)):
+    logging.info(f"Received request: {await request.json()}")
     try:
         result = remove_dataset_info_from_database(node=removedatasetobject.node, disease=removedatasetobject.disease, path=removedatasetobject.path)
         #result = remove_dataset_info_from_database(node=node, disease=disease, path=path)
@@ -92,9 +93,12 @@ async def delete_dataset(removedatasetobject: RemoveDatasetObject):#node: str, d
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
         raise e
+    #except Exception as e:
+    #    logger.error(f"Unexpected error: {e}")
+    #    raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+        logging.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/healthcheck")
 async def healthcheck():
