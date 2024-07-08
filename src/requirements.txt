@@ -4,3 +4,6 @@ psycopg2-binary
 uvicorn
 python-multipart
 pytest
+jsonschema
+sqlalchemy
+sqlmodel
