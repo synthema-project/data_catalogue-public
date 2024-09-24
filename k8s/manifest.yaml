@@ -26,8 +26,31 @@ spec:
           ports:
             - containerPort: 80
           env:
-            - name: DATABASE_FILE
-              value: "/app/data/central_node.db"
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_PASSWORD
+          - name: POSTGRES_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: POSTGRES_HOST
+          - name: POSTGRES_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: POSTGRES_PORT
           command: ["python", "main.py"]
           resources:
             limits:
@@ -42,9 +65,9 @@ metadata:
   name: data-catalogue-svc
   namespace: synthema-dev
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: data-catalogue
+    app: data-annotation
   ports:
     - port: 83
       targetPort: 83
