@@ -3,6 +3,25 @@ from fastapi.testclient import TestClient
 from main import app
 from models import NodeDatasetInfo, RemoveDatasetObject
 
+# Set up an SQLite in-memory database for testing
+TEST_DATABASE_URL = "sqlite:///./test.db"  # Use SQLite for testing
+engine = create_engine(TEST_DATABASE_URL, echo=True)
+
+# Path for example data
+current_dir = Path(__file__).resolve().parent
+
+# Create a new SQLite session for testing
+def override_get_session():
+    with Session(engine) as session:
+        yield session
+
+# Override the session dependency to use the SQLite database instead of PostgreSQL
+app.dependency_overrides[get_session] = override_get_session
+
+# Create database and tables for the test
+def create_test_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
 client = TestClient(app)
 
 # Get the directory path of the current script
