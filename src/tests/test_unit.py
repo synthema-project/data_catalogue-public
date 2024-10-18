@@ -77,7 +77,7 @@ def test_get_all_datasets():
 
 def test_delete_dataset():
     # Test the endpoint for deleting a specific dataset
-    response = client.delete("/metadata", removedatasetobject=remove_dataset)
+    response = client.delete("/metadata", json=remove_dataset)
     assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}. Response content: {response.content.decode()}"
     assert response.json() == {"message": f"Dataset '{remove_dataset['path']}' deleted successfully."}, "Failed to delete dataset"
 
