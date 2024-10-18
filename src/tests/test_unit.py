@@ -2,6 +2,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from main import app
 from models import NodeDatasetInfo, RemoveDatasetObject
+from sqlmodel import SQLModel, create_engine, Session
 
 # Set up an SQLite in-memory database for testing
 TEST_DATABASE_URL = "sqlite:///./test.db"  # Use SQLite for testing
