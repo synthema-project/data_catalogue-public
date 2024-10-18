@@ -48,6 +48,7 @@ def test_healthcheck():
 
 
 def test_save_dataset_info():
+    create_test_db_and_tables()  # Ensure the database is set up before running the test
     # Test the endpoint for saving dataset info
     response = client.post("/metadata", json=node_dataset)
     assert response.status_code == 200, f"Expected status code 200, but got {response.status_code}. Response content: {response.content.decode()}"
