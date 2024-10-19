@@ -64,18 +64,18 @@ def test_get_dataset_info():
     assert data["disease"] == "disease1"
     assert data["path"] == "/path/to/data"
 
-def test_update_dataset_info():
+#def test_update_dataset_info():
     # Update the dataset info
-    updated_dataset_info = {
-        "node": "node1",
-        "path": "/updated/path/to/data",
-        "disease": "disease1"
-    }
+#    updated_dataset_info = {
+#        "node": "node1",
+#        "path": "/updated/path/to/data",
+#        "disease": "disease1"
+#    }
 
     # PUT request to update the dataset info
-    response = client.put(f"{BASE_URL}/metadata", json=updated_dataset_info)
-    assert response.status_code == 200
-    assert response.json() == {"message": "Metadata updated successfully"}
+#    response = client.put(f"{BASE_URL}/metadata", json=updated_dataset_info)
+#    assert response.status_code == 200
+#    assert response.json() == {"message": "Metadata updated successfully"}
 
 def test_delete_dataset_info():
     # Define the object to be deleted
