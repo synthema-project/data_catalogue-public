@@ -92,7 +92,7 @@ def test_delete_dataset_info():
     }
 
     # Delete the dataset info using the API
-    response = client.delete(f"{BASE_URL}/metadata", node=dataset_info_to_delete["node"], disease=dataset_info_to_delete["disease"], path=dataset_info_to_delete["path"])
+    response = client.delete(f"{BASE_URL}/metadata", removedatasetobject=dataset_info_to_delete)
     
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
     assert response.json() == {"message": "Dataset '/updated/path/to/data' deleted successfully."}
