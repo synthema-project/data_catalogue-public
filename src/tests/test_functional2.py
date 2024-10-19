@@ -25,7 +25,7 @@ def create_test_db_and_tables():
 
 # Test client for FastAPI
 client = TestClient(app)
-help(TestClient.delete)
+
 # Example test data directory
 current_dir = Path(__file__).resolve().parent
 example_data_dir = current_dir / "Example_data"
@@ -84,7 +84,7 @@ def test_get_dataset_info():
 #    response = client.put(f"{BASE_URL}/metadata", json=updated_dataset_info)
 #    assert response.status_code == 200
 #    assert response.json() == {"message": "Metadata updated successfully"}
-
+print('HELP', help(TestClient.delete))
 def test_delete_dataset_info():
     # Define the object to be deleted
     dataset_info_to_delete = {
