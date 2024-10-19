@@ -84,7 +84,7 @@ def test_get_dataset_info():
 #    response = client.put(f"{BASE_URL}/metadata", json=updated_dataset_info)
 #    assert response.status_code == 200
 #    assert response.json() == {"message": "Metadata updated successfully"}
-print('HELP', help(TestClient.delete))
+
 def test_delete_dataset_info():
     # Define the object to be deleted
     dataset_info_to_delete = {
@@ -94,6 +94,7 @@ def test_delete_dataset_info():
     }
 
     # Delete the dataset info using the API
+    print('HELP', help(client.delete))
     response = client.delete(f"{BASE_URL}/metadata", data=dataset_info_to_delete)
     
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
