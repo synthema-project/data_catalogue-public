@@ -63,7 +63,7 @@ def test_get_dataset_info():
     
     data = response.json()
     print('DATA', data)
-    print('DATA2', data['datasets']['node'])
+    print('DATA2', data.datasets['node'])
     print('DATA3', data['node'])
     # Print response data to debug in case of failure
     print(f"Response data: {data}")
