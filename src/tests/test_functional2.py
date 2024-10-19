@@ -67,8 +67,8 @@ def test_get_dataset_info():
     print(f"Response data: {data}")
 
     # Ensure 'node' exists in the response
-    assert "node" in data, f"Response JSON does not contain 'node' key: {data}"
-    assert data["node"] == "node1", f"Expected node1 but got {data['node']}"
+    assert 'node' in data, f"Response JSON does not contain 'node' key: {data}"
+    assert data['node'] == "node1", f"Expected node1 but got {data['node']}"
 
 #def test_update_dataset_info():
     # Update the dataset info
