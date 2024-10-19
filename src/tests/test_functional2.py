@@ -56,8 +56,8 @@ def test_create_dataset_info():
 
 def test_get_dataset_info():
     # Retrieve the dataset info using the API
-    response = client.get(f"{BASE_URL}/metadata/disease?node=node1&disease=disease1")
-    
+    #response = client.get(f"{BASE_URL}/metadata/disease?node=node1&disease=disease1")
+    response = client.get(f"{BASE_URL}/metadata?node=node1&disease=disease1")
     assert response.status_code == 200
     data = response.json()
     assert data["node"] == "node1"
@@ -86,7 +86,8 @@ def test_delete_dataset_info():
     }
 
     # Delete the dataset info using the API
-    response = client.delete(f"{BASE_URL}/metadata", json=dataset_info_to_delete)
+    #response = client.delete(f"{BASE_URL}/metadata", json=dataset_info_to_delete)
+    response = client.delete(f"{BASE_URL}/metadata", data=json.dumps(dataset_info_to_delete), headers={"Content-Type": "application/json"})
     assert response.status_code == 200
     assert response.json() == {"message": "Dataset '/updated/path/to/data' deleted successfully."}
 
