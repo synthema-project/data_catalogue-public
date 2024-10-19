@@ -62,7 +62,7 @@ def test_get_dataset_info():
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
     
     data = response.json()
-    
+    print('DATA', data)
     # Print response data to debug in case of failure
     print(f"Response data: {data}")
 
@@ -92,7 +92,7 @@ def test_delete_dataset_info():
     }
 
     # Delete the dataset info using the API
-    response = client.delete(f"{BASE_URL}/metadata", json=dataset_info_to_delete)
+    response = client.delete(f"{BASE_URL}/metadata", dataset_info_to_delete)
     
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
     assert response.json() == {"message": "Dataset '/updated/path/to/data' deleted successfully."}
