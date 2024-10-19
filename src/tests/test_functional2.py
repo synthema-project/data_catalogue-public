@@ -88,7 +88,7 @@ def test_delete_dataset_info():
     dataset_info_to_delete = {
         "node": "node1",
         "disease": "disease1",
-        "path": "/updated/path/to/data"
+        "path": "/path/to/data"
     }
 
     # Delete the dataset info using the API
