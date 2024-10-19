@@ -5,7 +5,7 @@ from sqlmodel import SQLModel, create_engine, Session
 from fastapi.testclient import TestClient
 from main import app
 from database import get_session
-from models import NodeDatasetInfo
+from models import NodeDatasetInfo, RemoveDatasetObject
 
 # Set up an SQLite in-memory database for testing
 TEST_DATABASE_URL = "sqlite:///./test.db"  # Use SQLite for testing
@@ -92,7 +92,7 @@ def test_delete_dataset_info():
     }
 
     # Delete the dataset info using the API
-    response = client.delete(f"{BASE_URL}/metadata", dataset_info_to_delete)
+    response = client.delete(f"{BASE_URL}/metadata", node=dataset_info_to_delete["node"], disease=dataset_info_to_delete["disease"], path=dataset_info_to_delete["path"])
     
     assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
     assert response.json() == {"message": "Dataset '/updated/path/to/data' deleted successfully."}
