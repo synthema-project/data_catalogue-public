@@ -94,7 +94,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: data-annotation.k8s.synthema.rid-intrasoft.eu
+    - host: data-catalogue.k8s.synthema.rid-intrasoft.eu
       http:
         paths:
           - backend:
@@ -106,7 +106,7 @@ spec:
             pathType: Prefix
   tls:
     - hosts:
-        - data-annotation.k8s.synthema.rid-intrasoft.eu
+        - data-catalogue.k8s.synthema.rid-intrasoft.eu
 #---
 #apiVersion: v1
 #kind: Service
