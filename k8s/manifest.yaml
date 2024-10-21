@@ -52,10 +52,11 @@ spec:
                 name: postgres-config
                 key: POSTGRES_PORT
           command: ["python", "main.py"]
-          limits:
+          resources:
+            limits:
               cpu: "1"
               memory: "1Gi"
-          requests:
+            requests:
               cpu: "0.5"
               memory: "1Gi"
       imagePullSecrets:
