@@ -56,9 +56,10 @@ def test_get_dataset_info():
     response = client.get(f"{BASE_URL}/metadata?node=node1&disease=disease1")
     assert response.status_code == 200
     data = response.json()
-    assert data["node"] == "node1"
-    assert data["disease"] == "disease1"
-    assert data["path"] == "/path/to/data"
+    #assert 'node' in data['datasets'][0], f"Response JSON does not contain 'node' key: {data}"
+    assert data['datasets'][0]["node"] == "node1"
+    assert data['datasets'][0]["disease"] == "disease1"
+    assert data['datasets'][0]["path"] == "/path/to/data"
 
 # Test retrieving all datasets
 def test_get_all_datasets():
