@@ -4,4 +4,4 @@ metadata:
   name: postgres-config
 data:
   POSTGRES_HOST: mstorage-svc #db-service
-  POSTGRES_PORT: 5432 #80 #5432
+  POSTGRES_PORT: '5432' #80 #5432
