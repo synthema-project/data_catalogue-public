@@ -58,17 +58,64 @@ spec:
               memory: "1Gi"
       imagePullSecrets:
         - name: harbor-cred
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: data-catalogue-svc
+  labels:
+    app: data-catalogue
+    component: data-catalogue
+  name: data-catalogue-service
   namespace: synthema-dev
 spec:
   type: ClusterIP
   selector:
-    app: data-annotation
+    app: data-catalogue
   ports:
-    - port: 83
-      targetPort: 83
-      protocol: TCP
+    - protocol: TCP
+      port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "nginx"
+    #cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  labels:
+    app: data-catalogue
+    component: data-catalogue
+  name: data-catalogue-ingress-rule
+  namespace: synthema-dev
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: data-annotation.k8s.synthema.rid-intrasoft.eu
+      http:
+        paths:
+          - backend:
+              service:
+                name: data-catalogue-service
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - data-annotation.k8s.synthema.rid-intrasoft.eu
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: data-catalogue-svc
+#  namespace: synthema-dev
+#spec:
+#  type: ClusterIP
+#  selector:
+#    app: data-annotation
+#  ports:
+#    - port: 83
+#      targetPort: 83
+#      protocol: TCP
