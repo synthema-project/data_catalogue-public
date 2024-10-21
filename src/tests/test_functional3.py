@@ -29,7 +29,7 @@ def create_test_db_and_tables():
 client = TestClient(app)
 
 # Base URL for the API
-BASE_URL = "http://data_ann:80"
+BASE_URL = "http://data-catalogue.k8s.synthema.rid-intrasoft.eu:83"
 
 # Test healthcheck endpoint
 def test_healthcheck():
