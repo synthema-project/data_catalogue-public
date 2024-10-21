@@ -31,7 +31,7 @@ current_dir = Path(__file__).resolve().parent
 example_data_dir = current_dir / "Example_data"
 
 # Base URL for the API
-BASE_URL = "http://data-annotation.k8s.synthema.rid-intrasoft.eu:83"  # Adjust the port if needed
+BASE_URL = "http://data-catalogue.k8s.synthema.rid-intrasoft.eu:83"  # Adjust the port if needed
 
 # Test functions for CRUD operations
 
