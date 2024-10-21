@@ -55,7 +55,7 @@ spec:
           limits:
               cpu: "1"
               memory: "1Gi"
-            requests:
+          requests:
               cpu: "0.5"
               memory: "1Gi"
       imagePullSecrets:
