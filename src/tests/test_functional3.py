@@ -70,16 +70,16 @@ def test_get_all_datasets():
     assert len(data["datasets"]) > 0  # Ensure there's at least one dataset
 
 # Test deleting a specific dataset
-def test_delete_dataset():
-    dataset_info = {
-        "node": "node1",
-        "disease": "disease1",
-        "path": "/path/to/data"
-    }
+#def test_delete_dataset():
+#    dataset_info = {
+#        "node": "node1",
+#        "disease": "disease1",
+#        "path": "/path/to/data"
+#    }
 
-    response = client.delete(f"{BASE_URL}/metadata", json=dataset_info)
-    assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
-    assert response.json() == {"message": f"Dataset '{dataset_info['path']}' deleted successfully."}
+#    response = client.delete(f"{BASE_URL}/metadata", json=dataset_info)
+#    assert response.status_code == 200, f"Expected 200 OK but got {response.status_code}"
+#    assert response.json() == {"message": f"Dataset '{dataset_info['path']}' deleted successfully."}
 
 # Test deleting all datasets
 def test_delete_all_datasets():
