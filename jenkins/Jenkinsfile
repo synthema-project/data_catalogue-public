@@ -31,7 +31,7 @@ pipeline {
         // **************************
         stage("Unit_Tests"){
             steps{
-                sh 'docker container run -p 83:83 --name ${APP_NAME} --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test python -m pytest tests/test_unit2.py'
+                sh 'docker container run -e "PYTHONPATH=/tests" --name ${APP_NAME}_test_$(date +%s) --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test python -m pytest tests/test_unit2.py' #-p 83:83
             }
         }
 
@@ -52,7 +52,7 @@ pipeline {
                 // Execute the tests
                 script {
                     withKubeConfig([credentialsId: 'k8s-admin']) {
-                        def nodePort = sh(script: 'kubectl get svc data-catalogue-svc -n synthema-dev -o jsonpath={.spec.ports[0].nodePort}', returnStdout: true).trim()
+                        def nodePort = sh(script: 'kubectl get svc mstorage-svc -n synthema-dev -o jsonpath={.spec.ports[0].nodePort}', returnStdout: true).trim()
                         //sh "curl -f http://49.13.149.57:${nodePort}/healthcheck"
                         sh "curl -f http://data-annotation.k8s.synthema.rid-intrasoft.eu:${nodePort}/healthcheck"
                         sh "docker run --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test pytest tests/test_functional2.py"
@@ -73,7 +73,7 @@ pipeline {
         // *******************************
         stage("Push_Image"){
             when {
-                environment name: "GIT_BRANCH", value: "origin/master"
+                environment name: "GIT_BRANCH", value: "origin/dev"
             }
             steps {
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'harbor-jenkins-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]){
@@ -93,14 +93,16 @@ pipeline {
         // **************
         stage("Deployment"){
             when {
-                environment name: "GIT_BRANCH", value: "origin/master"
+                environment name: "GIT_BRANCH", value: "origin/dev"
             }
 
             steps {
                 withKubeConfig([credentialsId: 'k8s-admin']) {
                     sh '''
-                    cp k8s/manifest-staging.yaml k8s/manifest-staging-${DOCKER_TAG}.yaml
+                    cp k8s/manifest.yaml k8s/manifest-staging-${DOCKER_TAG}.yaml
                     sed -e "s|DOCKER_TAG|${DOCKER_TAG}|g" k8/k8_manifest-staging-${DOCKER_TAG}.yaml | kubectl apply -f -
+                    kubectl apply -f k8s/secret.yml 
+                    kubectl apply -f k8s/configmap.yml
                     '''
                }
             }
