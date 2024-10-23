@@ -16,13 +16,26 @@ app = FastAPI()
 def on_startup():
     create_db_and_tables()
 
+#@app.post("/metadata", tags=["data-catalogue"])
+#async def save_dataset_info_to_database_endpoint(node_dataset: NodeDatasetInfo, session: Session = Depends(get_session)):
+#    try:
+#        save_dataset_info_to_database(session, node_dataset)
+#        return {"message": 'Metadata uploaded successfully'}
+#    except HTTPException as e:
+#        raise e
+
 @app.post("/metadata", tags=["data-catalogue"])
 async def save_dataset_info_to_database_endpoint(node_dataset: NodeDatasetInfo, session: Session = Depends(get_session)):
     try:
+        logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
         save_dataset_info_to_database(session, node_dataset)
         return {"message": 'Metadata uploaded successfully'}
     except HTTPException as e:
+        logger.error(f"HTTPException occurred: {str(e)}")
         raise e
+    except Exception as e:
+        logger.exception("Unexpected error while saving dataset info to the database")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
 async def retrieve_dataset_info(node: str, disease: str, session: Session = Depends(get_session)):
