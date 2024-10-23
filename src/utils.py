@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
     try:
         logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
-        session.add(node_dataset)
+        session.add(node_dataset.model_dump())
         session.commit()
         logger.info(f"Dataset info saved successfully for node: {node_dataset.node}")
     except Exception as e:
