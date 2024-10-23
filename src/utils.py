@@ -1,6 +1,10 @@
 from sqlmodel import Session, select
 from fastapi import HTTPException
 from models import NodeDatasetInfo
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 #def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
 #    try:
