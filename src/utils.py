@@ -2,12 +2,23 @@ from sqlmodel import Session, select
 from fastapi import HTTPException
 from models import NodeDatasetInfo
 
+#def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
+#    try:
+#        session.add(node_dataset)
+#        session.commit()
+#    except Exception as e:
+#        print("Error saving dataset info to database:", e)
+#        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
     try:
+        logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
         session.add(node_dataset)
         session.commit()
+        logger.info(f"Dataset info saved successfully for node: {node_dataset.node}")
     except Exception as e:
-        print("Error saving dataset info to database:", e)
+        logger.error(f"Error saving dataset info to database: {str(e)}")
+        session.rollback()  # Rollback in case of error
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def get_dataset_info_from_database(session: Session, node: str, disease: str):
