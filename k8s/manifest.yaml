@@ -108,6 +108,7 @@ spec:
   tls:
     - hosts:
         - data-catalogue.k8s.synthema.rid-intrasoft.eu
+      secretName: data-catalogue.k8s.synthema.rid-intrasoft.eu-tls
 #---
 #apiVersion: v1
 #kind: Service
