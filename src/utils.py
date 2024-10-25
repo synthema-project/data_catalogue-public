@@ -40,6 +40,7 @@ def remove_dataset_info_from_database(session: Session, node: str, disease: str,
     try:
         statement = select(NodeDatasetInfo).where(NodeDatasetInfo.node == node, NodeDatasetInfo.disease == disease, NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
+        print('DATASET-INFO', dataset_info)
         if dataset_info:
             session.delete(dataset_info)
             session.commit()
