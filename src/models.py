@@ -11,3 +11,10 @@ class RemoveDatasetObject(BaseModel):
     node: str
     disease: str
     path: str
+
+class SyntheticDatasetGenerationRequestStatus(BaseModel, table=True):
+    user: str
+    model: str
+    n_sample: int
+    disease: str
+    condition: str
