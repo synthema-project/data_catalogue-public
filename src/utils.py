@@ -77,8 +77,21 @@ async def fetch_all_datasets(session: Session):
 async def register_new_task(
         task: SyntheticDatasetGenerationRequestStatus
         ) -> Tuple[str, str]:
+    """
+    Registers a new SD inference task in the storage.
+    Assigns "running" status by default.
+
+    Args:
+        sdg_request_status (SyntheticDatasetGenerationRequestStatus):
+            Task description.
+
+    Returns:
+        task_id (str): ID created by PostgreSQL for the new task.
+        created_at (str): Timestamp for the new task registration.
+    """
 
     try:
+        # Create connection with PostgreSQL
         conn = psycopg2.connect(
             dbname=str(Settings.POSTGRES_DB),
             user=str(Settings.POSTGRES_USER),
@@ -88,6 +101,7 @@ async def register_new_task(
 
         cursor = conn.cursor()
 
+        # Insert new task in PostgreSQL
         try:
             cursor.execute(
                 """
@@ -130,7 +144,21 @@ async def update_task_status(
     task_id: str,
     status: Literal["pending", "running", "cancelled", "success", "failed"],
 ):
+    """
+    Updates the status of an SD inference task that was previously registered.
+    The endpoint is called during the whole flow in the Shareable Data Pipeline (T3.1).
+    Error status is also defined for tasks that fail during the process.
+
+    Args:
+        task_id (str): Inference task reference.
+        status (Literal): Pending, running, cancelled, success, failed.
+
+    Returns:
+        None.
+    """
+
     try:
+        # Create connection with PostgreSQL
         conn = psycopg2.connect(
             dbname=str(Settings.POSTGRES_DB),
             user=str(Settings.POSTGRES_USER),
@@ -140,6 +168,7 @@ async def update_task_status(
 
         cursor = conn.cursor()
 
+        # Execute UPDATE task
         try:
             cursor.execute(
                 """
@@ -151,6 +180,7 @@ async def update_task_status(
             )
             conn.commit()
 
+            # Check if any value was modified
             if cursor.rowcount > 0:
                 print(f"Task {task_id} was updated.")
             else:

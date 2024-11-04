@@ -86,8 +86,7 @@ async def delete_all_datasets(session: Session = Depends(get_session)):
 async def request_synthetic_data_generation(sdg_request_status: SyntheticDatasetGenerationRequestStatus,
                                             ) -> Dict:
     """
-    Registers a new SD inference task in the storage.
-    Assigns "running" status by default.
+    Calls the function that first registers a new task in the storage.
 
     Args:
         sdg_request_status (SyntheticDatasetGenerationRequestStatus):
@@ -118,9 +117,8 @@ async def update_synthetic_data_generation_request(task_id: str,
                                                    status: Literal["pending", "running", "cancelled", "success", "failed"],
                                                    ) -> Dict:
     """
-    Updates the status of an SD inference task that was previously registered.
-    The endpoint is called during the whole flow in the Shareable Data Pipeline (T3.1).
-    Error status is also defined for tasks that fail during the process.
+    Calls the function that updates the  status of a previously
+    registered task.
 
     Args:
         task_id (str): Inference task reference.
