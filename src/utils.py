@@ -1,7 +1,11 @@
 from sqlmodel import Session, select
 from fastapi import HTTPException
-from models import NodeDatasetInfo
+from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus
 import logging
+from typing import Tuple, Literal
+import psycopg2
+
+from config import Settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,3 +73,99 @@ async def fetch_all_datasets(session: Session):
         return datasets
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def register_new_task(
+        task: SyntheticDatasetGenerationRequestStatus
+        ) -> Tuple[str, str]:
+
+    try:
+        conn = psycopg2.connect(
+            dbname=str(Settings.POSTGRES_DB),
+            user=str(Settings.POSTGRES_USER),
+            password=str(Settings.POSTGRES_PASSWORD),
+            host=str(Settings.POSTGRES_HOST),
+        )
+
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                """
+                INSERT INTO task_center (username, model, n_sample, disease, condition, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING task_id, created_at;
+            """,
+                (
+                    str(task.user),
+                    str(task.model),
+                    int(task.n_sample),
+                    str(task.disease),
+                    str(task.condition),
+                    "running",
+                ),
+            )
+
+            task_id, created_at = cursor.fetchone()
+
+            conn.commit()
+        except psycopg2.Error as e:
+            conn.rollback()
+            logger.error(f"SQL execution error: {e}")
+            raise
+        finally:
+            cursor.close()
+
+    except psycopg2.OperationalError as e:
+        logger.error(f"Database connection error: {e}")
+        raise
+
+    finally:
+        if conn:
+            conn.close()
+
+    return task_id, created_at
+
+
+async def update_task_status(
+    task_id: str,
+    status: Literal["pending", "running", "cancelled", "success", "failed"],
+):
+    try:
+        conn = psycopg2.connect(
+            dbname=str(Settings.POSTGRES_DB),
+            user=str(Settings.POSTGRES_USER),
+            password=str(Settings.POSTGRES_PASSWORD),
+            host=str(Settings.POSTGRES_HOST),
+        )
+
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                """
+                UPDATE task_center
+                SET status = %s
+                WHERE task_id = %s
+            """,
+                (str(status), str(task_id)),
+            )
+            conn.commit()
+
+            if cursor.rowcount > 0:
+                print(f"Task {task_id} was updated.")
+            else:
+                print("No task was updated.")
+        except psycopg2.Error as e:
+            conn.rollback()
+            logger.error(f"SQL execution error: {e}")
+            raise
+        finally:
+            cursor.close()
+
+    except psycopg2.OperationalError as e:
+        logger.error(f"Database connection error: {e}")
+        raise
+
+    finally:
+        if conn:
+            conn.close()
