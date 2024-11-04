@@ -12,7 +12,7 @@ class RemoveDatasetObject(BaseModel):
     disease: str
     path: str
 
-class SyntheticDatasetGenerationRequestStatus(BaseModel, table=True):
+class SyntheticDatasetGenerationRequestStatus(BaseModel):
     user: str
     model: str
     n_sample: int
