@@ -74,7 +74,7 @@ async def fetch_all_datasets(session: Session):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-async def register_new_task(
+async def register_new_sdg_task(
         task: SyntheticDatasetGenerationRequestStatus
         ) -> Tuple[str, str]:
     """
@@ -140,7 +140,7 @@ async def register_new_task(
     return task_id, created_at
 
 
-async def update_task_status(
+async def update_sdg_task_status(
     task_id: str,
     status: Literal["pending", "running", "cancelled", "success", "failed"],
 ):

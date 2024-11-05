@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from sqlalchemy.orm import Session
 from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
-from utils import register_new_task, update_task_status
+from utils import register_new_sdg_task, update_sdg_task_status
 from database import create_db_and_tables, get_session
 import uvicorn
 import logging
@@ -97,7 +97,7 @@ async def request_synthetic_data_generation(sdg_request_status: SyntheticDataset
     """
 
     try:
-        task_id, created_at = await register_new_task(sdg_request_status)
+        task_id, created_at = await register_new_sdg_task(sdg_request_status)
 
         return {
             "message": "Task was succesfully sent.",
@@ -129,7 +129,7 @@ async def update_synthetic_data_generation_request(task_id: str,
     """
 
     try:
-        update_task_status(task_id, status)
+        update_sdg_task_status(task_id, status)
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
