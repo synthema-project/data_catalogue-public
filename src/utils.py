@@ -201,6 +201,16 @@ async def update_sdg_task_status(
             conn.close()
 
 async def get_sdg_task_status(task_id: str):
+    """
+    Gets the status of a given task_id.
+
+    Args:
+        task_id (str): Inference task reference.
+
+    Returns:
+        status (str): Status of the task with ID task_id.
+    """
+
     try:
         # Create connection with PostgreSQL
         conn = psycopg2.connect(

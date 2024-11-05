@@ -141,7 +141,13 @@ async def update_synthetic_data_generation_request(task_id: str,
 @app.get("/synthetic_data/generation_request", tags=['data-catalogue'])
 async def get_synthetic_data_generation_request(task_id: str):
     """
+    Calls the function that gets the status of a given task_id.
 
+    Args:
+        task_id (str): Inference task reference.
+
+    Returns:
+        Log message.
     """
 
     try:
