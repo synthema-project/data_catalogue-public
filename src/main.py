@@ -109,7 +109,7 @@ async def request_synthetic_data_generation(sdg_request_status: SyntheticDataset
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.put("/synthetic_data/generation_request", tags=["data-catalogue"])
@@ -134,7 +134,7 @@ async def update_synthetic_data_generation_request(task_id: str,
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     return {"message": f"Task {task_id} - Status {status}"}
 
