@@ -199,3 +199,49 @@ async def update_sdg_task_status(
     finally:
         if conn:
             conn.close()
+
+async def get_sdg_task_status(task_id: str):
+    try:
+        # Create connection with PostgreSQL
+        conn = psycopg2.connect(
+            dbname=str(Settings.POSTGRES_DB),
+            user=str(Settings.POSTGRES_USER),
+            password=str(Settings.POSTGRES_PASSWORD),
+            host=str(Settings.POSTGRES_HOST),
+        )
+
+        cursor = conn.cursor()
+
+        # Get status
+        try:
+            cursor.execute(
+                """
+                SELECT status
+                FROM task_center
+                WHERE task_id = %s
+            """,
+                (
+                    str(task_id),
+                ),
+            )
+
+            status = cursor.fetchone()
+            print(status)
+
+            conn.commit()
+        except psycopg2.Error as e:
+            conn.rollback()
+            logger.error(f"SQL execution error: {e}")
+            raise
+        finally:
+            cursor.close()
+
+    except psycopg2.OperationalError as e:
+        logger.error(f"Database connection error: {e}")
+        raise
+
+    finally:
+        if conn:
+            conn.close()
+
+    return status[0]

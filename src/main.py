@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from sqlalchemy.orm import Session
 from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
-from utils import register_new_sdg_task, update_sdg_task_status
+from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status
 from database import create_db_and_tables, get_session
 import uvicorn
 import logging
@@ -137,6 +137,23 @@ async def update_synthetic_data_generation_request(task_id: str,
         raise HTTPException(status_code=500, detail=str(e)) from e
 
     return {"message": f"Task {task_id} - Status {status}"}
+
+@app.get("/synthetic_data/generation_request", tags=['data-catalogue'])
+async def get_synthetic_data_generation_request(task_id: str):
+    """
+
+    """
+
+    try:
+        status = await get_sdg_task_status(task_id)
+    except HTTPException as e:
+        logger.error(f"HTTPException: {e.detail}")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    return {"message": f"Checked task ID {task_id}",
+            "status": f"{status}"}
 
 @app.get("/healthcheck")
 async def healthcheck():
