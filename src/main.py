@@ -129,7 +129,7 @@ async def update_synthetic_data_generation_request(task_id: str,
     """
 
     try:
-        update_sdg_task_status(task_id, status)
+        await update_sdg_task_status(task_id, status)
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:

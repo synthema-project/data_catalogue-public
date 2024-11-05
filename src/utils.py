@@ -156,7 +156,6 @@ async def update_sdg_task_status(
     Returns:
         None.
     """
-
     try:
         # Create connection with PostgreSQL
         conn = psycopg2.connect(
@@ -236,7 +235,6 @@ async def get_sdg_task_status(task_id: str):
             )
 
             status = cursor.fetchone()
-            print(status)
 
             conn.commit()
         except psycopg2.Error as e:
