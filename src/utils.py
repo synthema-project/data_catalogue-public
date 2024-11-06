@@ -3,7 +3,6 @@ from fastapi import HTTPException
 from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable
 import logging
 from typing import Tuple, Literal
-import psycopg2
 
 from config import Settings
 
@@ -90,6 +89,7 @@ async def register_new_sdg_task(
         task_id (str): ID created by PostgreSQL for the new task.
         created_at (str): Timestamp for the new task registration.
     """
+
     try:
         # Transform task representation to match table structure
         task = SyntheticDatasetGenerationRequestStatusTable(**vars(task))
@@ -105,7 +105,8 @@ async def register_new_sdg_task(
 async def update_sdg_task_status(
     task_id: str,
     status: Literal["pending", "running", "cancelled", "success", "failed"],
-):
+    session: Session,
+) -> None:
     """
     Updates the status of an SD inference task that was previously registered.
     The endpoint is called during the whole flow in the Shareable Data Pipeline (T3.1).
@@ -118,50 +119,23 @@ async def update_sdg_task_status(
     Returns:
         None.
     """
+
     try:
-        # Create connection with PostgreSQL
-        conn = psycopg2.connect(
-            dbname=str(Settings.POSTGRES_DB),
-            user=str(Settings.POSTGRES_USER),
-            password=str(Settings.POSTGRES_PASSWORD),
-            host=str(Settings.POSTGRES_HOST),
-        )
+        task = session.exec(select(SyntheticDatasetGenerationRequestStatusTable).where(
+            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id
+        )).first()
 
-        cursor = conn.cursor()
+        if task:
+            task.status = status
+            session.commit()
+        else:
+            HTTPException(status_code=404, detail=f"Task ID not found.")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
-        # Execute UPDATE task
-        try:
-            cursor.execute(
-                """
-                UPDATE task_center
-                SET status = %s
-                WHERE task_id = %s
-            """,
-                (str(status), str(task_id)),
-            )
-            conn.commit()
 
-            # Check if any value was modified
-            if cursor.rowcount > 0:
-                print(f"Task {task_id} was updated.")
-            else:
-                print("No task was updated.")
-        except psycopg2.Error as e:
-            conn.rollback()
-            logger.error(f"SQL execution error: {e}")
-            raise
-        finally:
-            cursor.close()
-
-    except psycopg2.OperationalError as e:
-        logger.error(f"Database connection error: {e}")
-        raise
-
-    finally:
-        if conn:
-            conn.close()
-
-async def get_sdg_task_status(task_id: str):
+async def get_sdg_task_status(task_id: str, session: Session) -> str:
     """
     Gets the status of a given task_id.
 
@@ -173,45 +147,13 @@ async def get_sdg_task_status(task_id: str):
     """
 
     try:
-        # Create connection with PostgreSQL
-        conn = psycopg2.connect(
-            dbname=str(Settings.POSTGRES_DB),
-            user=str(Settings.POSTGRES_USER),
-            password=str(Settings.POSTGRES_PASSWORD),
-            host=str(Settings.POSTGRES_HOST),
-        )
-
-        cursor = conn.cursor()
-
-        # Get status
-        try:
-            cursor.execute(
-                """
-                SELECT status
-                FROM task_center
-                WHERE task_id = %s
-            """,
-                (
-                    str(task_id),
-                ),
-            )
-
-            status = cursor.fetchone()
-
-            conn.commit()
-        except psycopg2.Error as e:
-            conn.rollback()
-            logger.error(f"SQL execution error: {e}")
-            raise
-        finally:
-            cursor.close()
-
-    except psycopg2.OperationalError as e:
-        logger.error(f"Database connection error: {e}")
-        raise
-
-    finally:
-        if conn:
-            conn.close()
-
-    return status[0]
+        query = select(SyntheticDatasetGenerationRequestStatusTable.status).where(
+            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id)
+        
+        status_info = session.exec(query).first()
+        if status_info is None:
+            raise HTTPException(status_code=404, detail=f"Task ID not found.")
+        else:
+            return status_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e

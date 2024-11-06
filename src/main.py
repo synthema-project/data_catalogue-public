@@ -118,6 +118,7 @@ async def request_synthetic_data_generation(
 @app.put("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def update_synthetic_data_generation_request(task_id: str,
                                                    status: Literal["pending", "running", "cancelled", "success", "failed"],
+                                                   session: Session = Depends(get_session),
                                                    ) -> Dict:
     """
     Calls the function that updates the  status of a previously
@@ -132,7 +133,7 @@ async def update_synthetic_data_generation_request(task_id: str,
     """
 
     try:
-        await update_sdg_task_status(task_id, status)
+        await update_sdg_task_status(task_id, status, session)
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
@@ -142,7 +143,8 @@ async def update_synthetic_data_generation_request(task_id: str,
     return {"message": f"Task {task_id} - Status {status}"}
 
 @app.get("/synthetic_data/generation_request", tags=['data-catalogue'])
-async def get_synthetic_data_generation_request(task_id: str):
+async def get_synthetic_data_generation_request(task_id: str,
+                                                session: Session = Depends(get_session)):
     """
     Calls the function that gets the status of a given task_id.
 
@@ -154,7 +156,7 @@ async def get_synthetic_data_generation_request(task_id: str):
     """
 
     try:
-        status = await get_sdg_task_status(task_id)
+        status = await get_sdg_task_status(task_id, session)
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
