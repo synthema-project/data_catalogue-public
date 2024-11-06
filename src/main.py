@@ -83,8 +83,10 @@ async def delete_all_datasets(session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
-async def request_synthetic_data_generation(sdg_request_status: SyntheticDatasetGenerationRequestStatus,
-                                            ) -> Dict:
+async def request_synthetic_data_generation(
+    sdg_request_status: SyntheticDatasetGenerationRequestStatus,
+    session: Session = Depends(get_session)) -> Dict:
+
     """
     Calls the function that first registers a new task in the storage.
 
@@ -97,7 +99,8 @@ async def request_synthetic_data_generation(sdg_request_status: SyntheticDataset
     """
 
     try:
-        task_id, created_at = await register_new_sdg_task(sdg_request_status)
+        task_id, created_at = await register_new_sdg_task(sdg_request_status,
+                                                          session)
 
         return {
             "message": "Task was succesfully sent.",

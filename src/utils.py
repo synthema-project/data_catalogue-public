@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 from fastapi import HTTPException
-from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus
+from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable
 import logging
 from typing import Tuple, Literal
 import psycopg2
@@ -75,7 +75,8 @@ async def fetch_all_datasets(session: Session):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def register_new_sdg_task(
-        task: SyntheticDatasetGenerationRequestStatus
+        task: SyntheticDatasetGenerationRequestStatus,
+        session: Session,
         ) -> Tuple[str, str]:
     """
     Registers a new SD inference task in the storage.
@@ -89,55 +90,16 @@ async def register_new_sdg_task(
         task_id (str): ID created by PostgreSQL for the new task.
         created_at (str): Timestamp for the new task registration.
     """
-
     try:
-        # Create connection with PostgreSQL
-        conn = psycopg2.connect(
-            dbname=str(Settings.POSTGRES_DB),
-            user=str(Settings.POSTGRES_USER),
-            password=str(Settings.POSTGRES_PASSWORD),
-            host=str(Settings.POSTGRES_HOST),
-        )
+        # Transform task representation to match table structure
+        task = SyntheticDatasetGenerationRequestStatusTable(**vars(task))
+        session.add(task)
+        session.commit()
+        session.refresh(task)
 
-        cursor = conn.cursor()
-
-        # Insert new task in PostgreSQL
-        try:
-            cursor.execute(
-                """
-                INSERT INTO task_center (username, model, n_sample, disease, condition, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING task_id, created_at;
-            """,
-                (
-                    str(task.user),
-                    str(task.model),
-                    int(task.n_sample),
-                    str(task.disease),
-                    str(task.condition),
-                    "running",
-                ),
-            )
-
-            task_id, created_at = cursor.fetchone()
-
-            conn.commit()
-        except psycopg2.Error as e:
-            conn.rollback()
-            logger.error(f"SQL execution error: {e}")
-            raise
-        finally:
-            cursor.close()
-
-    except psycopg2.OperationalError as e:
-        logger.error(f"Database connection error: {e}")
-        raise
-
-    finally:
-        if conn:
-            conn.close()
-
-    return task_id, created_at
+        return str(task.task_id), str(task.created_at.isoformat())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def update_sdg_task_status(
