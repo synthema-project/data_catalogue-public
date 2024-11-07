@@ -1,7 +1,10 @@
 from sqlmodel import Session, select
 from fastapi import HTTPException
-from models import NodeDatasetInfo
+from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable
 import logging
+from typing import Tuple, Literal
+
+from config import Settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,3 +72,88 @@ async def fetch_all_datasets(session: Session):
         return datasets
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def register_new_sdg_task(
+        task: SyntheticDatasetGenerationRequestStatus,
+        session: Session,
+        ) -> Tuple[str, str]:
+    """
+    Registers a new SD inference task in the storage.
+    Assigns "running" status by default.
+
+    Args:
+        sdg_request_status (SyntheticDatasetGenerationRequestStatus):
+            Task description.
+
+    Returns:
+        task_id (str): ID created by PostgreSQL for the new task.
+        created_at (str): Timestamp for the new task registration.
+    """
+
+    try:
+        # Transform task representation to match table structure
+        task = SyntheticDatasetGenerationRequestStatusTable(**vars(task))
+        session.add(task)
+        session.commit()
+        session.refresh(task)
+
+        return str(task.task_id), str(task.created_at.isoformat())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+async def update_sdg_task_status(
+    task_id: str,
+    status: Literal["pending", "running", "cancelled", "success", "failed"],
+    session: Session,
+) -> None:
+    """
+    Updates the status of an SD inference task that was previously registered.
+    The endpoint is called during the whole flow in the Shareable Data Pipeline (T3.1).
+    Error status is also defined for tasks that fail during the process.
+
+    Args:
+        task_id (str): Inference task reference.
+        status (Literal): Pending, running, cancelled, success, failed.
+
+    Returns:
+        None.
+    """
+
+    try:
+        task = session.exec(select(SyntheticDatasetGenerationRequestStatusTable).where(
+            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id
+        )).first()
+
+        if task:
+            task.status = status
+            session.commit()
+        else:
+            HTTPException(status_code=404, detail=f"Task ID not found.")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+async def get_sdg_task_status(task_id: str, session: Session) -> str:
+    """
+    Gets the status of a given task_id.
+
+    Args:
+        task_id (str): Inference task reference.
+
+    Returns:
+        status (str): Status of the task with ID task_id.
+    """
+
+    try:
+        query = select(SyntheticDatasetGenerationRequestStatusTable.status).where(
+            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id)
+        
+        status_info = session.exec(query).first()
+        if status_info is None:
+            raise HTTPException(status_code=404, detail=f"Task ID not found.")
+        else:
+            return status_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
