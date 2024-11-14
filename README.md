@@ -1,4 +1,4 @@
-# Data catalogue workflow
+# Data catalogue module
 
 ## Description
 
