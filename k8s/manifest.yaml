@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-catalogue
+  labels:
+    app: data-catalogue
+    version: v0.1.0
+    env: dev
+    team: synthema
+    component: data-catalogue
+  namespace: synthema-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-catalogue
+  template:
+    metadata:
+      labels:
+        app: data-catalogue
+    spec:
+      containers:
+        - name: data-catalogue-container
+          image: harbor.synthema.rid-intrasoft.eu/synthema/data-catalogue:DOCKER_TAG
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 83
+          env:
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_DB
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secret
+                key: POSTGRES_PASSWORD
+          - name: POSTGRES_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: POSTGRES_HOST
+          - name: POSTGRES_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: POSTGRES_PORT
+          command: ["python", "main.py"]
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+            requests:
+              cpu: "0.5"
+              memory: "1Gi"
+      imagePullSecrets:
+        - name: harbor-cred
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: data-catalogue
+    component: data-catalogue
+  name: data-catalogue-service
+  namespace: synthema-dev
+spec:
+  type: ClusterIP
+  selector:
+    app: data-catalogue
+  ports:
+    - protocol: TCP
+      port: 83
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "nginx"
+    #cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  labels:
+    app: data-catalogue
+    component: data-catalogue
+  name: data-catalogue-ingress-rule
+  namespace: synthema-dev
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: data-catalogue.k8s.synthema.rid-intrasoft.eu
+      http:
+        paths:
+          - backend:
+              service:
+                name: data-catalogue-service
+                port:
+                  number: 83
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - data-catalogue.k8s.synthema.rid-intrasoft.eu
+      secretName: data-catalogue.k8s.synthema.rid-intrasoft.eu-tls
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: data-catalogue-svc
+#  namespace: synthema-dev
+#spec:
+#  type: ClusterIP
+#  selector:
+#    app: data-annotation
+#  ports:
+#    - port: 83
+#      targetPort: 83
+#      protocol: TCP
