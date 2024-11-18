@@ -6,7 +6,8 @@ from datetime import datetime
 from typing import Optional
 
 class NodeDatasetInfo(SQLModel, table=True):
-    id: str = Field(default=None, primary_key=True)
+    #id: str = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     node: str
     path: str
     disease: str
