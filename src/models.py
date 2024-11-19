@@ -8,9 +8,8 @@ from typing import Optional
 class NodeDatasetInfo(SQLModel, table=True):
     #id: str = Field(default=None, primary_key=True)
     #id: Optional[int] = Field(default=None, primary_key=True)
-    #id: Optional[uuid_pkg.UUID] = Field(default_factory=uuid_pkg.uuid4,
-    #                                         primary_key=True)
-    id: Optional[uuid_pkg.UUID] = Field(default_factory=uuid_pkg.uuid4)
+    id: Optional[uuid_pkg.UUID] = Field(default_factory=uuid_pkg.uuid4,
+                                             primary_key=True)
     node: str
     path: str
     disease: str
