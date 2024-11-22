@@ -57,15 +57,16 @@ async def get_all_datasets(session: Session = Depends(get_session)):
 @app.delete("/metadata", tags=["data-catalogue"])
 async def delete_dataset(
     #removedatasetobject: RemoveDatasetObject, 
-    node : str,
-    disease : str, 
-    path : str,
-    request: Request, 
+    removedatasetobject: RemoveDatasetObject = Body(..., description="Dataset details in JSON format"),
+    #node : str,
+    #disease : str, 
+    #path : str,
+    #request: Request, 
     session: Session = Depends(get_session)
 ):
     #logging.info(f"Received request: {await request.json()}")
-    logging.info(f"Received query parameters: node={node}, disease={disease}, path={path}")
-    removedatasetobject = RemoveDatasetObject(node = node, disease = disease, path = path)
+    logging.info(f"Received query parameters: node={removedatasetobject.node}, disease={removedatasetobject.disease}, path={removedatasetobject.path}")
+    #removedatasetobject = RemoveDatasetObject(node = node, disease = disease, path = path)
     try:
         result = remove_dataset_info_from_database(session, node=removedatasetobject.node, disease=removedatasetobject.disease, path=removedatasetobject.path)
         if result:
