@@ -28,7 +28,7 @@ def on_startup():
 
 @app.post("/metadata", tags=["data-catalogue"])
 #async def save_dataset_info_to_database_endpoint(node_dataset: NodeDatasetInfo, session: Session = Depends(get_session)):
-async def save_dataset_info_to_database_endpoint(node : str,disease : str, path : str,, session: Session = Depends(get_session)):
+async def save_dataset_info_to_database_endpoint(node : str, disease : str, path : str, session: Session = Depends(get_session)):
     try:
         logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
         save_dataset_info_to_database(session, node_dataset)
