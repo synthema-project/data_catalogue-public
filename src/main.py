@@ -55,30 +55,55 @@ async def get_all_datasets(session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="No datasets found")
     return {"datasets": datasets}
 
+#@app.delete("/metadata", tags=["data-catalogue"])
+#async def delete_dataset(
+#    #removedatasetobject: RemoveDatasetObject, 
+#    #removedatasetobject: RemoveDatasetObject = Body(..., description="Dataset details in JSON format"),
+#    node : str,
+#    disease : str, 
+#    path : str,
+#    #request: Request, 
+#    session: Session = Depends(get_session)
+#):
+#    #logging.info(f"Received request: {await request.json()}")
+#    logging.info(f"Received query parameters: node={node}, disease={disease}, path={path}")
+#    removedatasetobject = RemoveDatasetObject(node = node, disease = disease, path = path)
+#    try:
+#        result = remove_dataset_info_from_database(session, node=removedatasetobject.node, disease=removedatasetobject.disease, path=removedatasetobject.path)
+#        if result:
+#            logging.info(f"Metadata for path={path} removed successfully.")
+#            return {"message": f"Dataset '{removedatasetobject.path}' deleted successfully."}
+#        else:
+#            raise HTTPException(status_code=404, detail=f"Dataset '{removedatasetobject.path}' not found.")
+#    except HTTPException as e:
+#        logger.error(f"HTTPException: {e.detail}")
+#        raise e
+#    except Exception as e:
+#        logging.error(f"An error occurred: {e}")
+#        raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/metadata", tags=["data-catalogue"])
 async def delete_dataset(
-    #removedatasetobject: RemoveDatasetObject, 
-    #removedatasetobject: RemoveDatasetObject = Body(..., description="Dataset details in JSON format"),
-    node : str,
-    disease : str, 
-    path : str,
-    #request: Request, 
+    node: str,
+    disease: str,
+    path: str,
     session: Session = Depends(get_session)
 ):
-    #logging.info(f"Received request: {await request.json()}")
-    logging.info(f"Received query parameters: node={node}, disease={disease}, path={path}")
-    removedatasetobject = RemoveDatasetObject(node = node, disease = disease, path = path)
     try:
-        result = remove_dataset_info_from_database(session, node=removedatasetobject.node, disease=removedatasetobject.disease, path=removedatasetobject.path)
+        # Log the incoming DELETE request
+        logging.info(f"DELETE request received with node={node}, disease={disease}, path={path}")
+        
+        # Call the remove function
+        result = remove_dataset_info_from_database(session, node=node, disease=disease, path=path)
+
         if result:
-            return {"message": f"Dataset '{removedatasetobject.path}' deleted successfully."}
-        else:
-            raise HTTPException(status_code=404, detail=f"Dataset '{removedatasetobject.path}' not found.")
-    except HTTPException as e:
-        logger.error(f"HTTPException: {e.detail}")
-        raise e
+            logging.info(f"Metadata for path={path} removed successfully.")
+            return {"message": f"Dataset '{path}' deleted successfully."}
+
+        logging.warning(f"Metadata for path={path} not found in the database.")
+        raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logging.error(f"Error processing DELETE request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/metadata/all", tags=["data-catalogue"])
