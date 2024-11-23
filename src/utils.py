@@ -41,16 +41,25 @@ def get_dataset_info_from_database(session: Session, node: str, disease: str):
 
 def remove_dataset_info_from_database(session: Session, node: str, disease: str, path: str) -> bool:
     try:
-        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.node == node, NodeDatasetInfo.disease == disease, NodeDatasetInfo.path == path)
+        # Fetch the dataset info
+        statement = select(NodeDatasetInfo).where(
+            NodeDatasetInfo.node == node,
+            NodeDatasetInfo.disease == disease,
+            NodeDatasetInfo.path == path
+        )
         dataset_info = session.exec(statement).first()
-        print('DATASET-INFO', dataset_info)
+        # Log the dataset info for debugging
+        print("Dataset info found for deletion:", dataset_info)
         if dataset_info:
+            # Perform deletion
             session.delete(dataset_info)
             session.commit()
+            print("Dataset metadata successfully removed.")
             return True
+        print("Dataset metadata not found in the database.")
         return False
     except Exception as e:
-        print("Error removing dataset info from database:", e)
+        print("Error removing dataset metadata:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def remove_all_datasets_from_database(session: Session):
