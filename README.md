@@ -34,5 +34,3 @@ This project extends and uses the following Open Softwares, which are compliant 
 * jsonschema: MIT License
 * sqlalchemy: MIT License
 * sqlmodel: MIT License
-* requests: Apache 2.0 License
-* httpx: BSD License
