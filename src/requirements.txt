@@ -1,9 +1,0 @@
-fastapi
-pandas
-psycopg2-binary
-uvicorn
-python-multipart
-pytest
-jsonschema
-sqlalchemy
-sqlmodel
