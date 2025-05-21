@@ -45,7 +45,7 @@ def remove_dataset_info_from_database(session: Session, node: str, disease: str,
         statement = select(NodeDatasetInfo).where(
             NodeDatasetInfo.node == node,
             NodeDatasetInfo.disease == disease,
-            NodeDatasetInfo.path == path
+            NodeDatasetInfo.path == f"{node}/{filename}" ##path
         )
         logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
         dataset_info = session.exec(statement).first()
