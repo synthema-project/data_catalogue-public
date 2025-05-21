@@ -47,6 +47,7 @@ def remove_dataset_info_from_database(session: Session, node: str, disease: str,
             NodeDatasetInfo.disease == disease,
             NodeDatasetInfo.path == path
         )
+        logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
         dataset_info = session.exec(statement).first()
         # Log the dataset info for debugging
         print("Dataset info found for deletion:", dataset_info)
