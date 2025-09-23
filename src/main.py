@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from sqlalchemy.orm import Session
 from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
-from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri
+from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
 from database import create_db_and_tables, get_session
 import uvicorn
 import logging
@@ -121,7 +121,8 @@ async def delete_all_datasets(session: Session = Depends(get_session)):
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def request_synthetic_data_generation(
     sdg_request_status: SyntheticDatasetGenerationRequestStatus,
-    session: Session = Depends(get_session)) -> Dict:
+    session: Session = Depends(get_session)
+) -> Dict:
 
     """
     Calls the function that first registers a new task in the storage.
@@ -146,6 +147,7 @@ async def request_synthetic_data_generation(
 
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
+        raise e
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -210,6 +212,32 @@ async def get_synthetic_data_generation_request(task_id: str,
     if queried_data_uri is not None:
         result["queried_data_uri"] = queried_data_uri
     return result
+
+
+@app.get("/synthetic_data/user_generation_requests", tags=['data-catalogue'])
+async def get_synthetic_data_user_generation_requests(
+    username: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Calls the function that gets the tasks list of a user.
+
+    Args:
+        username (str): Username who made the requests
+
+    Returns:
+        Log message.
+    """
+    
+    try:
+        requests_list = await get_user_requests_list(username, session)
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    return {"username": username, "requests_count": len(requests_list), "requests_data": requests_list}
+
+
 
 @app.get("/healthcheck")
 async def healthcheck():

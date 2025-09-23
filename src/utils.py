@@ -1,8 +1,8 @@
 from sqlmodel import Session, select
 from fastapi import HTTPException
-from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable
+from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
 import logging
-from typing import Tuple, Literal, Optional
+from typing import Tuple, Literal, Optional, List
 
 from config import Settings
 
@@ -188,5 +188,51 @@ async def get_sdg_task_uri(task_id: str, session: Session) -> str:
         
         data_uri = session.exec(query).first()
         return data_uri
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    
+    
+async def get_user_requests_list(username: str, session: Session) -> List[dict]:
+    """
+    Gets the requests list for a given user
+    
+    Args:
+        username (str): Username
+
+    Returns:
+        user_requests (List[dict]): List of requests data with parameters
+    """
+
+    try:
+        # Prepare query
+        query = select(
+            SDGRT.task_id,
+            SDGRT.created_at,
+            SDGRT.model,
+            SDGRT.n_sample,
+            SDGRT.disease,
+            SDGRT.filters,
+            SDGRT.status
+        )
+        query = query.where(SDGRT.username == username)
+        query = query.order_by(SDGRT.created_at.desc()).limit(100).offset(0)
+        
+        # Execute query
+        rows = session.exec(query).all()
+        user_requests = [
+            {
+                "task_id": row[0],
+                "created_at": row[1],
+                "model": row[2],
+                "n_samples": row[3],
+                "disease": row[4],
+                "filters": row[5],
+                "status": row[6],
+            }
+            for row in rows
+        ]
+        
+        # Return results
+        return user_requests
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
