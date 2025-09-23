@@ -2,11 +2,11 @@ from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from sqlalchemy.orm import Session
 from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
-from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status
+from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri
 from database import create_db_and_tables, get_session
 import uvicorn
 import logging
-from typing import Dict, Literal
+from typing import Dict, Literal, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -154,6 +154,7 @@ async def request_synthetic_data_generation(
 @app.put("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def update_synthetic_data_generation_request(task_id: str,
                                                    status: Literal["pending", "running", "cancelled", "success", "failed"],
+                                                   synthetic_data_uri: Optional[str],
                                                    session: Session = Depends(get_session),
                                                    ) -> Dict:
     """
@@ -169,7 +170,7 @@ async def update_synthetic_data_generation_request(task_id: str,
     """
 
     try:
-        await update_sdg_task_status(task_id, status, session)
+        await update_sdg_task_status(task_id, status, synthetic_data_uri, session)
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
@@ -191,16 +192,24 @@ async def get_synthetic_data_generation_request(task_id: str,
         Log message.
     """
 
+    queried_data_uri = None
+    
     try:
         status = await get_sdg_task_status(task_id, session)
+        queried_data_uri = await get_sdg_task_uri(task_id, session)
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-    return {"message": f"Checked task ID {task_id}",
-            "status": f"{status}"}
+    result = {
+        "message": f"Checked task ID {task_id}",
+        "status": f"{status}",
+    }
+    if queried_data_uri is not None:
+        result["queried_data_uri"] = queried_data_uri
+    return result
 
 @app.get("/healthcheck")
 async def healthcheck():
