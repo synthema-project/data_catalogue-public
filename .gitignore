@@ -1,2 +1,4 @@
 .env.postgresql
 .env.api
+postgres_db
+__pycache__
