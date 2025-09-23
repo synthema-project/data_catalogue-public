@@ -31,15 +31,16 @@ class SyntheticDatasetGenerationRequestStatus(BaseModel):
     model: str
     n_sample: int
     disease: str
-    condition: str
+    filters: str
 
 class SyntheticDatasetGenerationRequestStatusTable(
     SQLModel,
     SyntheticDatasetGenerationRequestStatus,
     table=True,
 ):
-    __tablename__ = "task_center"
+    __tablename__ = "request_center"
     task_id: Optional[uuid_pkg.UUID] = Field(default_factory=uuid_pkg.uuid4,
                                              primary_key=True)
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     status: Optional[TaskStatus] = Field(default=TaskStatus.pending)
+    queried_data_uri: Optional[str] = Field(default=None)
