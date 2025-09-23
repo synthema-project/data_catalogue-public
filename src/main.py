@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, Body
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
@@ -199,8 +200,6 @@ async def get_synthetic_data_generation_request(task_id: str,
     try:
         status = await get_sdg_task_status(task_id, session)
         queried_data_uri = await get_sdg_task_uri(task_id, session)
-    except HTTPException as e:
-        logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -234,8 +233,10 @@ async def get_synthetic_data_user_generation_requests(
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+    
+    payload = {"username": username, "requests_count": len(requests_list), "requests_data": requests_list}
 
-    return {"username": username, "requests_count": len(requests_list), "requests_data": requests_list}
+    return JSONResponse(content=payload)
 
 
 

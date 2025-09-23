@@ -102,7 +102,7 @@ async def register_new_sdg_task(
 
     try:
         # Transform task representation to match table structure
-        task = SyntheticDatasetGenerationRequestStatusTable(**vars(task))
+        task = SDGRT(**vars(task))
         session.add(task)
         session.commit()
         session.refresh(task)
@@ -132,8 +132,8 @@ async def update_sdg_task_status(
     """
 
     try:
-        task = session.exec(select(SyntheticDatasetGenerationRequestStatusTable).where(
-            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id
+        task = session.exec(select(SDGRT).where(
+            SDGRT.task_id == task_id
         )).first()
 
         if task:
@@ -159,8 +159,8 @@ async def get_sdg_task_status(task_id: str, session: Session) -> Optional[str]:
     """
 
     try:
-        query = select(SyntheticDatasetGenerationRequestStatusTable.status).where(
-            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id)
+        query = select(SDGRT.status).where(
+            SDGRT.task_id == task_id)
         
         status_info = session.exec(query).first()
         if status_info is None:
@@ -183,8 +183,8 @@ async def get_sdg_task_uri(task_id: str, session: Session) -> str:
     """
     
     try:
-        query = select(SyntheticDatasetGenerationRequestStatusTable.queried_data_uri).where(
-            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id)
+        query = select(SDGRT.queried_data_uri).where(
+            SDGRT.task_id == task_id)
         
         data_uri = session.exec(query).first()
         return data_uri
