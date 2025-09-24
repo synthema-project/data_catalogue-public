@@ -30,6 +30,7 @@ services:
       - synthema-data-catalogue
     ports:
       - "8080:83"
+    restart: unless-stopped
 
 networks:
   synthema-data-catalogue:

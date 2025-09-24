@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
 import logging
 from typing import Tuple, Literal, Optional, List
+from enum import Enum
 
 from config import Settings
 
@@ -102,7 +103,7 @@ async def register_new_sdg_task(
 
     try:
         # Transform task representation to match table structure
-        task = SDGRT(**vars(task))
+        task = SDGRT.convert_to_db_entry(task)
         session.add(task)
         session.commit()
         session.refresh(task)
@@ -192,6 +193,15 @@ async def get_sdg_task_uri(task_id: str, session: Session) -> str:
         raise HTTPException(status_code=500, detail=str(e)) from e
     
     
+def normalize_filters(filters_str):
+    if isinstance(filters_str, (str, bytes, bytearray)):
+        try:
+            return json.loads(filters_str)
+        except Exception:
+            return filters_str
+        return filters_str
+    
+    
 async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     """
     Gets the requests list for a given user
@@ -226,8 +236,8 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
                 "model": row[2],
                 "n_samples": row[3],
                 "disease": row[4],
-                "filters": row[5],
-                "status": row[6],
+                "filters": normalize_filters(filters_str=row[5]),
+                "status": row[6].value if isinstance(row[6], Enum) else row[6],
             }
             for row in rows
         ]

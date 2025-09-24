@@ -3,7 +3,9 @@ from pydantic import BaseModel
 import uuid as uuid_pkg
 from enum import Enum
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+from sqlalchemy import Column, JSON as JSONType
+from typing import Dict, Any
 
 class NodeDatasetInfo(SQLModel, table=True):
     #id: str = Field(default=None, primary_key=True)
@@ -25,13 +27,18 @@ class TaskStatus(str, Enum):
     success = "success"
     cancelled = "cancelled"
     failed = "failed"
+    
+class FilterInput(BaseModel):
+    column: str
+    operator: str = "="
+    filter_value: str
 
 class SyntheticDatasetGenerationRequestStatus(BaseModel):
     username: str
     model: str
     n_sample: int
     disease: str
-    filters: str
+    filters: List[FilterInput] = Field(default_factory=list)
 
 class SyntheticDatasetGenerationRequestStatusTable(
     SQLModel,
@@ -44,3 +51,21 @@ class SyntheticDatasetGenerationRequestStatusTable(
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     status: Optional[TaskStatus] = Field(default=TaskStatus.pending)
     queried_data_uri: Optional[str] = Field(default=None)
+
+    filters: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        sa_column=Column("filters", JSONType),
+        repr=False,
+    )
+    
+    @classmethod
+    def convert_to_db_entry(cls, req: SyntheticDatasetGenerationRequestStatus) -> "SyntheticDatasetGenerationRequestStatusTable":
+        """Construct the row for db from the API input model"""
+        return cls(
+            username=req.username,
+            model=req.model,
+            n_sample=req.n_sample,
+            disease=req.disease,
+            # Convertimos objetos FilterInput -> dicts JSON
+            filters=[f.model_dump() for f in (req.filters or [])],
+        )
