@@ -1,8 +1,9 @@
 from sqlmodel import Session, select
 from fastapi import HTTPException
-from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable
+from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
 import logging
-from typing import Tuple, Literal
+from typing import Tuple, Literal, Optional, List
+from enum import Enum
 
 from config import Settings
 
@@ -45,8 +46,9 @@ def remove_dataset_info_from_database(session: Session, node: str, disease: str,
         statement = select(NodeDatasetInfo).where(
             NodeDatasetInfo.node == node,
             NodeDatasetInfo.disease == disease,
-            NodeDatasetInfo.path == path
+            NodeDatasetInfo.path == path #f"{node}/{filename}" ##path
         )
+        logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
         dataset_info = session.exec(statement).first()
         # Log the dataset info for debugging
         print("Dataset info found for deletion:", dataset_info)
@@ -101,7 +103,7 @@ async def register_new_sdg_task(
 
     try:
         # Transform task representation to match table structure
-        task = SyntheticDatasetGenerationRequestStatusTable(**vars(task))
+        task = SDGRT.convert_to_db_entry(task)
         session.add(task)
         session.commit()
         session.refresh(task)
@@ -114,6 +116,7 @@ async def register_new_sdg_task(
 async def update_sdg_task_status(
     task_id: str,
     status: Literal["pending", "running", "cancelled", "success", "failed"],
+    synthetic_data_uri: Optional[str],
     session: Session,
 ) -> None:
     """
@@ -130,12 +133,13 @@ async def update_sdg_task_status(
     """
 
     try:
-        task = session.exec(select(SyntheticDatasetGenerationRequestStatusTable).where(
-            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id
+        task = session.exec(select(SDGRT).where(
+            SDGRT.task_id == task_id
         )).first()
 
         if task:
             task.status = status
+            task.queried_data_uri = synthetic_data_uri
             session.commit()
         else:
             HTTPException(status_code=404, detail=f"Task ID not found.")
@@ -144,7 +148,7 @@ async def update_sdg_task_status(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-async def get_sdg_task_status(task_id: str, session: Session) -> str:
+async def get_sdg_task_status(task_id: str, session: Session) -> Optional[str]:
     """
     Gets the status of a given task_id.
 
@@ -156,13 +160,89 @@ async def get_sdg_task_status(task_id: str, session: Session) -> str:
     """
 
     try:
-        query = select(SyntheticDatasetGenerationRequestStatusTable.status).where(
-            SyntheticDatasetGenerationRequestStatusTable.task_id == task_id)
+        query = select(SDGRT.status).where(
+            SDGRT.task_id == task_id)
         
         status_info = session.exec(query).first()
         if status_info is None:
             raise HTTPException(status_code=404, detail=f"Task ID not found.")
         else:
             return status_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    
+    
+async def get_sdg_task_uri(task_id: str, session: Session) -> str:
+    """
+    Gets the queried_data_uri of a given task_id.
+
+    Args:
+        task_id (str): Inference task reference.
+
+    Returns:
+        queried_data_uri (str): URI to download the queried data
+    """
+    
+    try:
+        query = select(SDGRT.queried_data_uri).where(
+            SDGRT.task_id == task_id)
+        
+        data_uri = session.exec(query).first()
+        return data_uri
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    
+    
+def normalize_filters(filters_str):
+    if isinstance(filters_str, (str, bytes, bytearray)):
+        try:
+            return json.loads(filters_str)
+        except Exception:
+            return filters_str
+        return filters_str
+    
+    
+async def get_user_requests_list(username: str, session: Session) -> List[dict]:
+    """
+    Gets the requests list for a given user
+    
+    Args:
+        username (str): Username
+
+    Returns:
+        user_requests (List[dict]): List of requests data with parameters
+    """
+
+    try:
+        # Prepare query
+        query = select(
+            SDGRT.task_id,
+            SDGRT.created_at,
+            SDGRT.model,
+            SDGRT.n_sample,
+            SDGRT.disease,
+            SDGRT.filters,
+            SDGRT.status
+        )
+        query = query.where(SDGRT.username == username)
+        query = query.order_by(SDGRT.created_at.desc()).limit(100).offset(0)
+        
+        # Execute query
+        rows = session.exec(query).all()
+        user_requests = [
+            {
+                "task_id": row[0],
+                "created_at": row[1],
+                "model": row[2],
+                "n_samples": row[3],
+                "disease": row[4],
+                "filters": normalize_filters(filters_str=row[5]),
+                "status": row[6].value if isinstance(row[6], Enum) else row[6],
+            }
+            for row in rows
+        ]
+        
+        # Return results
+        return user_requests
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
