@@ -158,7 +158,7 @@ async def request_synthetic_data_generation(
 @app.put("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def update_synthetic_data_generation_request(task_id: str,
                                                    status: Literal["pending", "running", "cancelled", "success", "failed"],
-                                                   synthetic_data_uri: Optional[str],
+                                                   synthetic_data_uri: Optional[str] = None,
                                                    session: Session = Depends(get_session),
                                                    ) -> Dict:
     """
