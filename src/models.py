@@ -14,11 +14,17 @@ class NodeDatasetInfo(SQLModel, table=True):
                                              primary_key=True)
     node: str
     path: str
-    disease: str
+    disease: str # to change into use_case
+
+class UseCase(SQLModel, table=True):
+    __tablename__ = "usecases"
+
+    use_case: str = Field(primary_key=True)
+    nodes: List[str] = Field(default_factory=list, sa_column=Column(ARRAY(String)))
 
 class RemoveDatasetObject(BaseModel):
     node: str
-    disease: str
+    disease: str # to change into use_case
     path: str
 
 class TaskStatus(str, Enum):
@@ -68,4 +74,5 @@ class SyntheticDatasetGenerationRequestStatusTable(
             disease=req.disease,
             # Convertimos objetos FilterInput -> dicts JSON
             filters=[f.model_dump() for f in (req.filters or [])],
+
         )
