@@ -35,8 +35,8 @@ async def save_dataset_info_to_database_endpoint(
 ):
 #async def save_dataset_info_to_database_endpoint(node : str, disease : str, path : str, session: Session = Depends(get_session)):
     try:
-        logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
-        #logger.info(f"Saving metadata for node={node_dataset.node}, use_case={node_dataset.use_case}")
+        #logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        logger.info(f"Saving metadata for node={node_dataset.node}, use_case={node_dataset.use_case}")
         
         # Save per-dataset metadata
         save_dataset_info_to_database(session, node_dataset)
@@ -265,4 +265,5 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
