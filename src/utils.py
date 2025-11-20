@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
+from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
+from models import NodeDatasetInfo, UseCase, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
 import logging
 from typing import Tuple, Literal, Optional, List
 from enum import Enum
@@ -269,3 +270,4 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
