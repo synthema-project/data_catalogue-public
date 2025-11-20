@@ -4,8 +4,11 @@ import uuid as uuid_pkg
 from enum import Enum
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import Column, JSON as JSONType
+from sqlalchemy import Column, String, JSON as JSONType
+from sqlalchemy.dialects.postgresql import ARRAY
 from typing import Dict, Any
+
+from sqlalchemy import Column, String
 
 class NodeDatasetInfo(SQLModel, table=True):
     #id: str = Field(default=None, primary_key=True)
@@ -76,3 +79,4 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
