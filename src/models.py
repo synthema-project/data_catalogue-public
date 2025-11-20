@@ -10,7 +10,7 @@ from typing import Dict, Any
 
 from sqlalchemy import Column, String
 
-class NodeDatasetInfo(SQLModel, table=True):
+class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     #id: str = Field(default=None, primary_key=True)
     #id: Optional[int] = Field(default=None, primary_key=True)
     id: Optional[uuid_pkg.UUID] = Field(default_factory=uuid_pkg.uuid4,
@@ -79,5 +79,6 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
