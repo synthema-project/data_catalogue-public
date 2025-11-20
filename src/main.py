@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
-from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
+from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
+from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
 from database import create_db_and_tables, get_session
 import uvicorn
@@ -29,18 +29,36 @@ def on_startup():
 #        raise e
 
 @app.post("/metadata", tags=["data-catalogue"])
-async def save_dataset_info_to_database_endpoint(node_dataset: NodeDatasetInfo, session: Session = Depends(get_session)):
+async def save_dataset_info_to_database_endpoint(
+    node_dataset: NodeDatasetInfo, 
+    session: Session = Depends(get_session)
+):
 #async def save_dataset_info_to_database_endpoint(node : str, disease : str, path : str, session: Session = Depends(get_session)):
     try:
         logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        #logger.info(f"Saving metadata for node={node_dataset.node}, use_case={node_dataset.use_case}")
+        
+        # Save per-dataset metadata
         save_dataset_info_to_database(session, node_dataset)
+        
+        # Update the use-case aggregated structure
+        update_use_case(session, node_dataset.use_case, node_dataset.node)
+
         return {"message": 'Metadata uploaded successfully'}
+    
     except HTTPException as e:
         logger.error(f"HTTPException occurred: {str(e)}")
         raise e
     except Exception as e:
         logger.exception("Unexpected error while saving dataset info to the database")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/usecases", tags=["data-catalogue"])
+async def list_use_cases(session: Session = Depends(get_session)):
+    from sqlmodel import select
+
+    results = session.exec(select(UseCase)).all()
+    return [{"use_case": uc.use_case, "nodes": uc.nodes} for uc in results]
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
 async def retrieve_dataset_info(node: str, disease: str, session: Session = Depends(get_session)):
@@ -247,3 +265,4 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
