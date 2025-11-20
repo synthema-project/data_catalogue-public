@@ -11,8 +11,13 @@ connect_args = {}
 engine = create_engine(postgres_url, echo=True, connect_args=connect_args)
 
 def create_db_and_tables():
-    SQLModel.metadata.drop_all(engine)
-    SQLModel.metadata.create_all(engine)
+
+    SQLModel.metadata.drop_all(bind=engine, tables=[NodeDatasetInfo.__table__])  # Solo la tabella specifica
+
+    # Ricrea la tabella
+    SQLModel.metadata.create_all(bind=engine, tables=[NodeDatasetInfo.__table__])
+    #SQLModel.metadata.drop_all(engine)
+    #SQLModel.metadata.create_all(engine)
 
 from sqlalchemy.exc import ProgrammingError
 
@@ -32,6 +37,7 @@ def create_db_and_tables():
 
 def get_session():
     return Session(engine)
+
 
 
 
