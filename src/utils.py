@@ -21,12 +21,34 @@ logger = logging.getLogger(__name__)
 def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
     try:
         logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        #logger.info(f"Adding dataset info for node={node_dataset.node}, use_case={node_dataset.use_case}")
         session.add(node_dataset)
         session.commit()
         logger.info(f"Dataset info saved successfully for node: {node_dataset.node}")
     except Exception as e:
         logger.error(f"Error saving dataset info to database: {str(e)}")
         session.rollback()  # Rollback in case of error
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def update_use_case(session: Session, use_case: str, node: str):
+    """Register that a given node contains data for a use-case."""
+
+    try:
+        uc = session.get(UseCase, use_case)
+
+        if uc is None:
+            uc = UseCase(use_case=use_case, nodes=[node])
+            session.add(uc)
+        else:
+            if node not in uc.nodes:
+                uc.nodes.append(node)
+
+        session.commit()
+        logger.info(f"Use-case {use_case} updated with node {node}")
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error updating use-case: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def get_dataset_info_from_database(session: Session, node: str, disease: str):
@@ -245,4 +267,5 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
         # Return results
         return user_requests
     except Exception as e:
+
         raise HTTPException(status_code=500, detail=str(e)) from e
