@@ -1,6 +1,8 @@
 from sqlmodel import create_engine, SQLModel, Session
 from config import settings
 from models import NodeDatasetInfo
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy import text
 
 #postgres_arg = "postgres:password_prova@localhost:5432/dataset_catalogue"
 #postgres_url = f"postgresql://{postgres_arg}"
@@ -43,6 +45,7 @@ def add_use_case_column():
 
 def get_session():
     return Session(engine)
+
 
 
 
