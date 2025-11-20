@@ -12,13 +12,8 @@ connect_args = {}
 engine = create_engine(postgres_url, echo=True, connect_args=connect_args)
 
 def create_db_and_tables():
-
-    SQLModel.metadata.drop_all(bind=engine, tables=[NodeDatasetInfo.__table__])  # Solo la tabella specifica
-
-    # Ricrea la tabella
-    SQLModel.metadata.create_all(bind=engine, tables=[NodeDatasetInfo.__table__])
     #SQLModel.metadata.drop_all(engine)
-    #SQLModel.metadata.create_all(engine)
+    SQLModel.metadata.create_all(engine)
 
 def add_use_case_column():
     with engine.connect() as connection:
@@ -48,6 +43,7 @@ def add_use_case_column():
 
 def get_session():
     return Session(engine)
+
 
 
 
