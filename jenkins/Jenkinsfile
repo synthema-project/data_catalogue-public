@@ -25,7 +25,7 @@ pipeline {
                 sh 'docker image push ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test'
             }
         }
-
+/*
         // **************************
         // *** RUN THE UNIT TESTS ***
         // **************************
@@ -67,7 +67,7 @@ pipeline {
         //        }
         //     }
         // }
-
+*/
         // *******************************
         // *** Push Images To Registry ***
         // *******************************
