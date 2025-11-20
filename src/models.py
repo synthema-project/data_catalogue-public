@@ -17,7 +17,7 @@ class NodeDatasetInfo(SQLModel, table=True):
                                              primary_key=True)
     node: str
     path: str
-    disease: str # to change into use_case
+    use_case: str # to change into use_case
 
 class UseCase(SQLModel, table=True):
     __tablename__ = "usecases"
@@ -27,7 +27,7 @@ class UseCase(SQLModel, table=True):
 
 class RemoveDatasetObject(BaseModel):
     node: str
-    disease: str # to change into use_case
+    use_case: str # to change into use_case
     path: str
 
 class TaskStatus(str, Enum):
@@ -79,4 +79,5 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
