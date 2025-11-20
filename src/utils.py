@@ -19,10 +19,13 @@ logger = logging.getLogger(__name__)
 #        print("Error saving dataset info to database:", e)
 #        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
+def save_dataset_info_to_database(
+    session: Session, 
+    node_dataset: NodeDatasetInfo
+):
     try:
-        logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
-        #logger.info(f"Adding dataset info for node={node_dataset.node}, use_case={node_dataset.use_case}")
+        #logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        logger.info(f"Adding dataset info for node={node_dataset.node}, use_case={node_dataset.use_case}")
         session.add(node_dataset)
         session.commit()
         logger.info(f"Dataset info saved successfully for node: {node_dataset.node}")
@@ -270,4 +273,5 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
