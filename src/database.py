@@ -19,24 +19,35 @@ def create_db_and_tables():
     #SQLModel.metadata.drop_all(engine)
     #SQLModel.metadata.create_all(engine)
 
-from sqlalchemy.exc import ProgrammingError
-
-def create_db_and_tables():
+def add_use_case_column():
     with engine.connect() as connection:
         try:
-            # Cancella solo le tabelle (non i tipi personalizzati)
-            SQLModel.metadata.drop_all(engine)
-
-            # Ricrea tutte le tabelle
-            SQLModel.metadata.create_all(engine)
-
-            print("Database resettato con successo!")
+            # Esegui la query per aggiungere la colonna `use_case`
+            connection.execute(text("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo' AND column_name = 'use_case'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo ADD COLUMN use_case VARCHAR(255);
+                    END IF;
+                END $$;
+            """))
+            connection.commit()
+            print("Colonna 'use_case' aggiunta con successo!")
+        except ProgrammingError as e:
+            connection.rollback()
+            print(f"Errore durante l'aggiunta della colonna: {e}")
         except Exception as e:
             connection.rollback()
-            print(f"Errore durante il reset del database: {e}")
+            print(f"Errore inatteso: {e}")
+
 
 def get_session():
     return Session(engine)
+
 
 
 
