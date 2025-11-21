@@ -64,6 +64,7 @@ async def get_use_cases(session: Session = Depends(get_session)):
 
     return {"use_cases": [uc.dict() for uc in ucs]}
 
+
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
 async def retrieve_dataset_info(node: str, disease: str, session: Session = Depends(get_session)):
     try:
@@ -284,6 +285,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
