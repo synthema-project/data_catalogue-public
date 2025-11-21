@@ -5,7 +5,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import Column, String, JSON as JSONType
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from typing import Dict, Any
 
 from sqlalchemy import Column, String
@@ -19,11 +19,16 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     path: str
     use_case: str # to change into use_case
 
+#class UseCase(SQLModel, table=True):
+#    __tablename__ = "usecases"
+#
+#    use_case: str = Field(primary_key=True)
+#    nodes: List[str] = Field(default_factory=list, sa_column=Column(ARRAY(String)))
+
 class UseCase(SQLModel, table=True):
     __tablename__ = "usecases"
-
     use_case: str = Field(primary_key=True)
-    nodes: List[str] = Field(default_factory=list, sa_column=Column(ARRAY(String)))
+    datasets: list = Field(sa_column=Column(JSONB))
 
 class RemoveDatasetObject(BaseModel):
     node: str
@@ -79,6 +84,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
