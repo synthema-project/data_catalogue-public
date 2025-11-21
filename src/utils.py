@@ -142,6 +142,27 @@ def update_use_case(session, use_case, node, path):
         session.add(record)
 
     session.commit()
+
+def update_use_case(session, use_case, node, path):
+    record = session.query(UseCase).filter_by(use_case=use_case).first()
+
+    dataset_name = path.lstrip("/")
+
+    if record:
+        new_datasets = list(record.datasets)
+        if dataset_name not in new_datasets:
+            new_datasets.append(dataset_name)
+
+        record.datasets = new_datasets
+
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets=[dataset_name]
+        )
+        session.add(record)
+
+    session.commit()
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -405,6 +426,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
