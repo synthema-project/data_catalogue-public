@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from models import NodeDatasetInfo, UseCase, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
 import logging
-from typing import Tuple, Literal, Optional, List
+from typing import Tuple, Literal, Optional, List, Dict, Any
 from enum import Enum
 
 from config import Settings
@@ -93,7 +93,7 @@ def update_use_case(session: Session, use_case: str, node: str, path: str):
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating use-case: {e}")
 '''
-
+'''
 def update_use_case(session, use_case, node, path):
     record = session.query(UseCase).filter_by(use_case=use_case).first()
 
@@ -115,7 +115,107 @@ def update_use_case(session, use_case, node, path):
         #session.commit()
 
     session.commit()
+'''
+def normalize_dataset_entry(d) -> Dict[str, Any]:
+    """
+    Ensure a dataset entry is a dict {"node": ..., "path": ...}.
+    Accepts dict or JSON-string (possibly double-encoded) and returns dict.
+    """
+    if isinstance(d, dict):
+        return d
+    if isinstance(d, bytes):
+        d = d.decode("utf-8")
+    if isinstance(d, str):
+        # Try to un-wrap double-encoded JSON strings until we get a dict
+        val = d
+        tries = 0
+        while tries < 3:
+            tries += 1
+            try:
+                loaded = json.loads(val)
+            except Exception:
+                # not valid JSON; try to strip surrounding quotes/braces then break
+                break
+            # if loaded is a string, maybe double-encoded -> continue
+            if isinstance(loaded, str):
+                val = loaded
+                continue
+            # if loaded is dict/list -> return dict (if list take first?)
+            if isinstance(loaded, dict):
+                return loaded
+            # else fallback
+            val = loaded
+        # fallback: try to interpret raw as dict-like (very defensive)
+        try:
+            return json.loads(d)
+        except Exception:
+            raise ValueError(f"Cannot normalize dataset entry: {d!r}")
+    raise ValueError(f"Unsupported dataset entry type: {type(d)}")
 
+
+def update_use_case(session, use_case: str, node: str, path: str):
+    """
+    Add (node, path) to UseCase.datasets (array of JSON objects) without duplications.
+    This routine is defensive:
+     - converts existing string entries to dicts
+     - normalizes the path so it begins with "node/" (but does not double-prefix)
+     - avoids duplicate node+path entries
+    """
+    # Normalize path to a single "node/..." format (do not duplicate prefixes)
+    if path.startswith(f"{node}/"):
+        normalized_path = path
+    else:
+        normalized_path = f"{node}/{path}"
+
+    new_entry = {"node": node, "path": normalized_path}
+
+    # fetch current record
+    record = session.query(UseCase).filter_by(use_case=use_case).first()
+
+    if record:
+        # ensure datasets is a Python list
+        existing = record.datasets or []
+
+        # clean and normalize existing entries (convert strings -> dicts)
+        cleaned: list[dict] = []
+        for item in existing:
+            try:
+                entry = normalize_dataset_entry(item)
+            except Exception as e:
+                # log and skip malformed entries (or decide to raise)
+                # logger.warning(f"Skipping malformed dataset entry: {item} ({e})")
+                continue
+            # normalize path inside entry if necessary (avoid double node prefix)
+            e_node = entry.get("node")
+            e_path = entry.get("path")
+            if e_node and e_path:
+                if not e_path.startswith(f"{e_node}/"):
+                    e_path = f"{e_node}/{e_path}"
+                entry["path"] = e_path
+            cleaned.append(entry)
+
+        # dedupe cleaned list (by node+path)
+        seen = {(d["node"], d["path"]) for d in cleaned if "node" in d and "path" in d}
+
+        # add new entry only if not present
+        if (new_entry["node"], new_entry["path"]) not in seen:
+            cleaned.append(new_entry)
+            # assign back to record.datasets in a form SQLAlchemy/Postgres expects
+            record.datasets = cleaned
+            session.add(record)
+        else:
+            # nothing to do
+            record.datasets = cleaned  # rewrite cleaned normalized values back (optional)
+            session.add(record)
+
+    else:
+        # create new use case row
+        record = UseCase(use_case=use_case, datasets=[new_entry])
+        session.add(record)
+
+    # commit once
+    session.commit()
+    return record
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -379,6 +479,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
