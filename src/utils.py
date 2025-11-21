@@ -93,7 +93,7 @@ def update_use_case(session: Session, use_case: str, node: str, path: str):
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating use-case: {e}")
 '''
-'''
+
 def update_use_case(session, use_case, node, path):
     record = session.query(UseCase).filter_by(use_case=use_case).first()
 
@@ -115,43 +115,7 @@ def update_use_case(session, use_case, node, path):
         #session.commit()
 
     session.commit()
-'''
-def update_use_case(session, use_case: str, node: str, path: str):
 
-    # Normalize path (remove duplicated prefixes)
-    if not path.startswith(f"{node}/"):
-        path = f"{node}/{path}"
-
-    record = session.query(UseCase).filter_by(use_case=use_case).first()
-
-    new_entry = {"node": node, "path": path}
-
-    if record:
-        # Fix possible string leftovers from DB
-        cleaned = []
-        for d in record.datasets:
-            if isinstance(d, str):
-                d = json.loads(d)
-            cleaned.append(d)
-
-        record.datasets = cleaned
-
-        # Check duplicates
-        if not any(
-            d["node"] == node and d["path"] == path
-            for d in record.datasets
-        ):
-            record.datasets.append(new_entry)
-
-    else:
-        # Create brand-new use case
-        record = UseCase(
-            use_case=use_case,
-            datasets=[new_entry]
-        )
-        session.add(record)
-
-    session.commit()
 
 #def get_dataset_info_from_database(
 #    session: Session,
@@ -416,6 +380,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
