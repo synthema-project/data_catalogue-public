@@ -115,6 +115,23 @@ def update_use_case(session, use_case, node, path):
 
     session.commit()
 
+def update_use_case(session, use_case, node, path):
+    record = session.query(UseCase).filter_by(use_case=use_case).first()
+
+    new_entry = {"node": node, "path": path}
+
+    if record:
+        if not any(d["node"] == node and d["path"] == path for d in record.datasets):
+            record.datasets.append(new_entry)
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets=[new_entry]
+        )
+        session.add(record)
+
+    session.commit()
+
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -378,6 +395,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
