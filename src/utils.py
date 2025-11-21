@@ -93,6 +93,7 @@ def update_use_case(session: Session, use_case: str, node: str, path: str):
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating use-case: {e}")
 '''
+'''
 def update_use_case(session, use_case, node, path):
     record = session.query(UseCase).filter_by(use_case=use_case).first()
 
@@ -114,7 +115,7 @@ def update_use_case(session, use_case, node, path):
         #session.commit()
 
     session.commit()
-
+'''
 def update_use_case(session, use_case: str, node: str, path: str):
 
     # Normalize path (remove duplicated prefixes)
@@ -415,6 +416,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
