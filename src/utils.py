@@ -101,8 +101,8 @@ def update_use_case(session, use_case, node, path):
     if record:
         # append only if not duplicated
         if new_entry not in record.datasets:
-            #record.datasets = record.datasets + [new_entry]
-            record.datasets.append(new_entry)
+            record.datasets = record.datasets + [new_entry]
+            #record.datasets.append(new_entry)
             session.add(record)
             #session.commit()
     else:
@@ -378,6 +378,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
