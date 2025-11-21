@@ -118,20 +118,22 @@ def update_use_case(session, use_case, node, path):
 '''
 def update_use_case(session, use_case, node, path):
     record = session.query(UseCase).filter_by(use_case=use_case).first()
-
-    dataset_name = path  # Keep simple: a plain string
+    dataset_name = path.lstrip("/")
 
     if record:
-        # Ensure no duplicates
-        if dataset_name not in record.datasets:
-            record.datasets.append(dataset_name)
+        new_datasets = list(record.datasets)  # <- copy!
+        if dataset_name not in new_datasets:
+            new_datasets.append(dataset_name)
 
-        # Also update the nodes list
-        if node not in record.nodes:
-            record.nodes.append(node)
+        new_nodes = list(record.nodes)
+        if node not in new_nodes:
+            new_nodes.append(node)
+
+        # The critical part:
+        record.datasets = new_datasets
+        record.nodes = new_nodes
 
     else:
-        # Create new record
         record = UseCase(
             use_case=use_case,
             datasets=[dataset_name],
@@ -403,6 +405,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
