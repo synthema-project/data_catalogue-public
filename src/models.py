@@ -60,6 +60,10 @@ class UseCase(SQLModel, table=True):
         default_factory=list,
         sa_column=Column(ARRAY(String), nullable=False)
     )
+    nodes: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(ARRAY(String), nullable=False)
+    )
 
 class RemoveDatasetObject(BaseModel):
     node: str
@@ -115,6 +119,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
