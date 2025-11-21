@@ -60,15 +60,30 @@ def update_use_case(
         logger.error(f"Error updating use-case: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def get_dataset_info_from_database(session: Session, node: str, disease: str):
+#def get_dataset_info_from_database(
+#    session: Session,
+#    node: str, disease: str):
+#    try:
+#        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.node == node, NodeDatasetInfo.disease == disease)
+#        dataset_info = session.exec(statement).first()
+#        if dataset_info is None:
+#            raise HTTPException(status_code=404, detail=f"No dataset found in the database for node: {node} and disease: {disease}")
+#        return dataset_info
+#    except Exception as e:
+#        print("Error retrieving dataset info from database:", e)
+#        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def get_dataset_info_from_database(session: Session, path: str):
     try:
-        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.node == node, NodeDatasetInfo.disease == disease)
+        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
         if dataset_info is None:
-            raise HTTPException(status_code=404, detail=f"No dataset found in the database for node: {node} and disease: {disease}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"No dataset found with path: {path}"
+            )
         return dataset_info
-    except Exception as e:
-        print("Error retrieving dataset info from database:", e)
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def remove_dataset_info_from_database(session: Session, node: str, disease: str, path: str) -> bool:
@@ -278,6 +293,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
