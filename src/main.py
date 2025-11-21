@@ -19,8 +19,8 @@ app = FastAPI()
 
 @app.on_event("startup")
 def on_startup():
-    #add_use_case_column()
-    #add_datasets_column_to_usecases()
+    add_use_case_column()
+    add_datasets_column_to_usecases()
     create_db_and_tables()
 
 #@app.post("/metadata", tags=["data-catalogue"])
@@ -285,6 +285,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
