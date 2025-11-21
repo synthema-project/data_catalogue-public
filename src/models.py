@@ -37,7 +37,7 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
 #        sa_column=Column(JSON)
 #    )
 
-class UseCase(Base):
+class UseCase(SQLModel, table=True):
     __tablename__ = "usecases"
 
     use_case = Column(String, primary_key=True)
@@ -97,6 +97,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
