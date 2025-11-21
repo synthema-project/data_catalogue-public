@@ -47,6 +47,12 @@ class UseCase(SQLModel, table=True):
         sa_column=Column(ARRAY(JSONB), nullable=False, default=list)
     )
 
+class UseCase(SQLModel, table=True):
+    __tablename__ = "usecases"
+
+    use_case: str = Field(primary_key=True)
+    datasets: List[str] = Field(default_factory=list, sa_column=Column(ARRAY(String)))
+
 class RemoveDatasetObject(BaseModel):
     node: str
     use_case: str # to change into use_case
@@ -101,6 +107,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
