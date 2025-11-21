@@ -64,6 +64,18 @@ async def get_use_cases(session: Session = Depends(get_session)):
 
     return {"use_cases": [uc.model_dump() for uc in ucs]}
 
+@app.get("/usecases/{use_case}")
+def get_use_case(use_case: str, db: Session = Depends(get_db)):
+    record = db.query(UseCase).filter_by(use_case=use_case).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Use case not found")
+
+    return {
+        "use_case": record.use_case,
+        "datasets": record.datasets
+    }
+
 
 
 
@@ -287,6 +299,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
