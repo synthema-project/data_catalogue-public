@@ -66,24 +66,28 @@ def update_use_case(session: Session, use_case: str, node: str, path: str):
     """
     try:
         uc = session.get(UseCase, use_case)
-
+        print(node)
+        print(path)
         dataset_entry = {"node": node, "path": path}
-
+        print(dataset_entry)
         if uc is None:
             # Create new use-case record
             uc = UseCase(
                 use_case=use_case,
                 datasets=[dataset_entry]
             )
+            print(uc)
             session.add(uc)
 
         else:
             # Avoid duplicates
             if dataset_entry not in uc.datasets:
+                print(uc)
                 uc.datasets.append(dataset_entry)
 
         session.commit()
-        session.refresh(uc)
+        #session.refresh(uc)
+        logger.info(f"Use-case {use_case} updated with node {node}")
 
     except Exception as e:
         session.rollback()
@@ -352,6 +356,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
