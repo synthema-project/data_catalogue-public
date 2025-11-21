@@ -42,9 +42,41 @@ def add_use_case_column():
             connection.rollback()
             print(f"Errore inatteso: {e}")
 
+def add_datasets_column_to_usecases():
+    """
+    Safely adds the 'datasets' TEXT[] column to the 'usecases' table
+    if it does not already exist.
+    """
+    with engine.connect() as connection:
+        try:
+            connection.execute(text("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_name = 'usecases'
+                        AND column_name = 'datasets'
+                    ) THEN
+                        ALTER TABLE usecases
+                        ADD COLUMN datasets TEXT[] DEFAULT '{}'::text[] NOT NULL;
+                    END IF;
+                END $$;
+            """))
+            connection.commit()
+            print("Column 'datasets' successfully added to 'usecases' table!")
+
+        except ProgrammingError as e:
+            connection.rollback()
+            print(f"ProgrammingError while adding column: {e}")
+
+        except Exception as e:
+            connection.rollback()
+            print(f"Unexpected error: {e}")
 
 def get_session():
     return Session(engine)
+
 
 
 
