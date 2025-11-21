@@ -94,6 +94,12 @@ async def get_all_datasets(session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="No datasets found")
     return {"datasets": datasets}
 
+@app.delete("/usecases/all")
+def delete_all_usecases(session: SessionDep):
+    session.exec(delete(UseCase))
+    session.commit()
+    return {"status": "ok"}
+
 #@app.delete("/metadata", tags=["data-catalogue"])
 #async def delete_dataset(
 #    #removedatasetobject: RemoveDatasetObject, 
@@ -299,6 +305,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
