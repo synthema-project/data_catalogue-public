@@ -9,6 +9,7 @@ from database import create_db_and_tables, get_session, add_use_case_column
 import uvicorn
 import logging
 from typing import Dict, Literal, Optional
+from sqlmodel import select
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -55,11 +56,11 @@ async def save_dataset_info_to_database_endpoint(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/usecases", tags=["data-catalogue"])
-async def list_use_cases(session: Session = Depends(get_session)):
-    from sqlmodel import select
+async def get_use_cases(session: Session = Depends(get_session)):
+    statement = select(UseCase)
+    ucs = session.exec(statement).all()
 
-    results = session.exec(select(UseCase)).all()
-    return [{"use_case": uc.use_case, "nodes": uc.nodes} for uc in results]
+    return {"use_cases": [uc.dict() for uc in ucs]}
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
 async def retrieve_dataset_info(node: str, disease: str, session: Session = Depends(get_session)):
@@ -266,6 +267,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
