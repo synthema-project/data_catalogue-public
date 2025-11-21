@@ -37,14 +37,17 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
 #        sa_column=Column(JSON)
 #    )
 
+
 class UseCase(SQLModel, table=True):
     __tablename__ = "usecases"
 
     use_case: str = Field(primary_key=True)
 
-    # Postgres ARRAY of JSONB objects
+    # Python-side default is created by Pydantic (avoid mutable default pitfall)
+    # sa_column instructs SQLAlchemy to create an ARRAY of JSONB on Postgres
     datasets: List[Dict[str, Any]] = Field(
-        sa_column=Column(ARRAY(JSONB), nullable=False, default=list)
+        default_factory=list,
+        sa_column=Column(ARRAY(JSONB), nullable=False)
     )
 
 class RemoveDatasetObject(BaseModel):
@@ -101,6 +104,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
