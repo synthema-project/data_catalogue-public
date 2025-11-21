@@ -117,31 +117,21 @@ def update_use_case(session, use_case, node, path):
     session.commit()
 '''
 def update_use_case(session, use_case, path):
-    # 1. Prepare the dataset name
     dataset_name = path.lstrip("/")
+    print(f"Processing Use Case: {use_case}, Dataset: {dataset_name}")
     
-    # 2. Try to find the existing record
     record = session.query(UseCase).filter_by(use_case=use_case).first()
 
     if record:
-        # **UPDATE LOGIC**
-        # Append the new dataset name only if it's not already in the list.
-        # Modifying the list in place (record.datasets.append) is the correct
-        # way to trigger change tracking for mutable types in SQLAlchemy/SQLModel.
-        if dataset_name not in record.datasets:
-            record.datasets.append(dataset_name)
-    
+        print("Record Found (Updating datasets)")
+        # ... update logic
     else:
-        # **CREATE LOGIC**
-        # Create a new record with the new dataset.
-        record = UseCase(
-            use_case=use_case,
-            datasets=[dataset_name],
-        )
+        print("Record NOT Found (Creating new record)")
+        # ... creation logic
         session.add(record)
 
-    # 3. Commit the changes (whether updated or newly created)
     session.commit()
+    print("Database committed successfully.")
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -405,6 +395,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
