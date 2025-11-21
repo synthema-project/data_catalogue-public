@@ -56,10 +56,9 @@ class UseCase(SQLModel, table=True):
 
     use_case: str = Field(primary_key=True)
 
-    # Now datasets is just an array of strings
     datasets: List[str] = Field(
         default_factory=list,
-        sa_column=Column(ARRAY(str), nullable=False)
+        sa_column=Column(ARRAY(String), nullable=False)
     )
 
 class RemoveDatasetObject(BaseModel):
@@ -116,6 +115,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
