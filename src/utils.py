@@ -228,17 +228,15 @@ def remove_dataset_info_from_database(session: Session, path: str) -> bool:
         # delete dataset entry
         session.delete(dataset_info)
 
-        # update use-case table
-        '''
+       # update use-case table
         uc = session.get(UseCase, use_case)
         if uc:
-            uc.datasets = [d for d in uc.datasets if d["path"] != path]
+            uc.datasets = [d for d in uc.datasets if d != path]
 
             if len(uc.datasets) == 0:
                 session.delete(uc)
 
         session.commit()
-        '''
         return True
 
     except Exception:
@@ -428,6 +426,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
