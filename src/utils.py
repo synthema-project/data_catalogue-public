@@ -83,6 +83,7 @@ def update_use_case(session: Session, use_case: str, node: str, path: str):
                 uc.datasets.append(dataset_entry)
 
         session.commit()
+        session.refresh(uc)
 
     except Exception as e:
         session.rollback()
@@ -351,6 +352,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
