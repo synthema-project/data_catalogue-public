@@ -36,7 +36,7 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
 #        default_factory=list,
 #        sa_column=Column(JSON)
 #    )
-'''
+
 class UseCase(SQLModel, table=True):
     __tablename__ = "usecases"
 
@@ -46,20 +46,7 @@ class UseCase(SQLModel, table=True):
     datasets: List[Dict[str, Any]] = Field(
         sa_column=Column(ARRAY(JSONB), nullable=False, default=list)
     )
-'''
-class UseCase(SQLModel, table=True):
-    __tablename__ = "usecases"
 
-    use_case: str = Field(primary_key=True)
-
-    # Correct column definition: ARRAY of JSONB objects
-    datasets: List[Dict[str, Any]] = Field(
-        sa_column=Column(
-            ARRAY(JSONB),
-            nullable=False,
-            default=[]
-        )
-    )
 class RemoveDatasetObject(BaseModel):
     node: str
     use_case: str # to change into use_case
@@ -114,6 +101,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
