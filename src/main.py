@@ -57,7 +57,7 @@ async def save_dataset_info_to_database_endpoint(
         logger.exception("Unexpected error while saving dataset info to the database")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@app.get("/metadata", tags=["data-catalogue"])
+@app.get("/usecases", tags=["data-catalogue"])
 async def get_use_cases(session: Session = Depends(get_session)):
     statement = select(UseCase)
     ucs = session.exec(statement).all()
@@ -287,6 +287,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
