@@ -99,7 +99,7 @@ async def get_all_datasets(session: Session = Depends(get_session)):
 def delete_all_usecases(session: Session = Depends(get_session)):
     session.exec(delete(UseCase))
     session.commit()
-    return {"status": "ok"}
+    return {"All use-cases have been deleted"}
 
 #@app.delete("/metadata", tags=["data-catalogue"])
 #async def delete_dataset(
@@ -306,6 +306,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
