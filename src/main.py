@@ -46,7 +46,7 @@ async def save_dataset_info_to_database_endpoint(
         
         # Update the use-case aggregated structure
         #update_use_case(session, node_dataset.use_case, node_dataset.node)
-        update_use_case(session, use_case=node_dataset.use_case, dataset_path=node_dataset.path)
+        update_use_case(session, use_case=node_dataset.use_case, node=node_dataset.node, dataset_path=node_dataset.path)
 
         return {"message": 'Metadata uploaded successfully'}
     
@@ -64,6 +64,7 @@ async def get_use_cases(session: Session = Depends(get_session)):
 
     return {"use_cases": [uc.model_dump() for uc in ucs]}
     #return {"use_cases" : [ucs]}
+
 
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
@@ -286,6 +287,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
