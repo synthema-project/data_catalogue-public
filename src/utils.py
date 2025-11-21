@@ -33,7 +33,7 @@ def save_dataset_info_to_database(
         logger.error(f"Error saving dataset info to database: {str(e)}")
         session.rollback()  # Rollback in case of error
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
+'''
 def update_use_case(
     session: Session,
     use_case: str,
@@ -59,6 +59,28 @@ def update_use_case(
         session.rollback()
         logger.error(f"Error updating use-case: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+'''
+def update_use_case(session: Session, use_case: str, dataset_path: str):
+    """
+    Register that a use-case contains a given dataset path.
+    """
+    try:
+        uc = session.get(UseCase, use_case)
+
+        if uc is None:
+            # Create new use-case entry
+            uc = UseCase(use_case=use_case, datasets=[dataset_path])
+            session.add(uc)
+        else:
+            # Append new dataset if not already present
+            if dataset_path not in uc.datasets:
+                uc.datasets.append(dataset_path)
+
+        session.commit()
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating use-case: {e}")
 
 #def get_dataset_info_from_database(
 #    session: Session,
@@ -323,6 +345,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
