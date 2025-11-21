@@ -62,7 +62,8 @@ async def get_use_cases(session: Session = Depends(get_session)):
     statement = select(UseCase)
     ucs = session.exec(statement).all()
 
-    return {"use_cases": [uc.dict() for uc in ucs]}
+    #return {"use_cases": [uc.dict() for uc in ucs]}
+    return {"use_cases" : [ucs]}
 
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
@@ -285,6 +286,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
