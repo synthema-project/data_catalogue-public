@@ -93,7 +93,7 @@ def update_use_case(session: Session, use_case: str, node: str, path: str):
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating use-case: {e}")
 '''
-'''
+
 def update_use_case(session, use_case, node, path):
     record = session.query(UseCase).filter_by(use_case=use_case).first()
 
@@ -115,43 +115,7 @@ def update_use_case(session, use_case, node, path):
         #session.commit()
 
     session.commit()
-'''
-def update_use_case(session, use_case, node, path):
 
-    # normalize path (optional)
-    if path.startswith(f"{node}/{node}/"):
-        path = path[len(node)+1:]  # remove duplicated node prefix
-
-    record = session.query(UseCase).filter_by(use_case=use_case).first()
-
-    # create entry
-    new_entry = {"node": node, "path": path}
-
-    # ---- FIX: convert any incoming string to dict ----
-    if isinstance(new_entry, str):
-        new_entry = json.loads(new_entry)
-
-    if record:
-        cleaned = []
-        for d in record.datasets:
-            if isinstance(d, str):      # <-- this fixes your exploding "\"{\\\"...\\\"}\""
-                d = json.loads(d)
-            cleaned.append(d)
-
-        record.datasets = cleaned      # now everything is dicts
-
-        if new_entry not in record.datasets:
-            record.datasets.append(new_entry)
-            session.add(record)
-
-    else:
-        record = UseCase(
-            use_case=use_case,
-            datasets=[new_entry]
-        )
-        session.add(record)
-
-    session.commit()
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -415,6 +379,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
