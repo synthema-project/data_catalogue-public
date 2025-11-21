@@ -113,7 +113,7 @@ def update_use_case(session, use_case, node, path):
         session.add(record)
         #session.commit()
 
-    #session.commit()
+    session.commit()
 
 #def get_dataset_info_from_database(
 #    session: Session,
@@ -378,6 +378,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
