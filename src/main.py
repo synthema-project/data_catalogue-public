@@ -104,28 +104,43 @@ async def get_all_datasets(session: Session = Depends(get_session)):
 #        logging.error(f"An error occurred: {e}")
 #        raise HTTPException(status_code=500, detail=str(e))
 
+#@app.delete("/metadata", tags=["data-catalogue"])
+#async def delete_dataset(
+#    node: str,
+#    disease: str,
+#    path: str,
+#    session: Session = Depends(get_session)
+#):
+#    try:
+#        # Log the incoming DELETE request
+#        logging.info(f"DELETE request received with node={node}, disease={disease}, path={path}")
+#        
+#        # Call the remove function
+#        result = remove_dataset_info_from_database(session, node=node, disease=disease, path=path)
+
+#        if result:
+#            logging.info(f"Metadata for path={path} removed successfully.")
+#            return {"message": f"Dataset '{path}' deleted successfully."}
+
+#        logging.warning(f"Metadata for path={path} not found in the database.")
+#        raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
+#    except Exception as e:
+#        logging.error(f"Error processing DELETE request: {e}")
+#        raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/metadata", tags=["data-catalogue"])
 async def delete_dataset(
-    node: str,
-    disease: str,
     path: str,
     session: Session = Depends(get_session)
 ):
     try:
-        # Log the incoming DELETE request
-        logging.info(f"DELETE request received with node={node}, disease={disease}, path={path}")
-        
-        # Call the remove function
-        result = remove_dataset_info_from_database(session, node=node, disease=disease, path=path)
-
+        result = remove_dataset_info_from_database(session, path=path)
         if result:
-            logging.info(f"Metadata for path={path} removed successfully.")
             return {"message": f"Dataset '{path}' deleted successfully."}
 
-        logging.warning(f"Metadata for path={path} not found in the database.")
         raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
+
     except Exception as e:
-        logging.error(f"Error processing DELETE request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/metadata/all", tags=["data-catalogue"])
@@ -267,6 +282,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
