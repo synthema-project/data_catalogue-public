@@ -116,22 +116,32 @@ def update_use_case(session, use_case, node, path):
 
     session.commit()
 '''
-def update_use_case(session, use_case, path):
-    dataset_name = path.lstrip("/")
-    print(f"Processing Use Case: {use_case}, Dataset: {dataset_name}")
-    
+def update_use_case(session, use_case, node, path):
     record = session.query(UseCase).filter_by(use_case=use_case).first()
+    dataset_name = path.lstrip("/")
 
     if record:
-        print("Record Found (Updating datasets)")
-        # ... update logic
+        new_datasets = list(record.datasets)  # <- copy!
+        if dataset_name not in new_datasets:
+            new_datasets.append(dataset_name)
+
+        new_nodes = list(record.nodes)
+        if node not in new_nodes:
+            new_nodes.append(node)
+
+        # The critical part:
+        record.datasets = new_datasets
+        record.nodes = new_nodes
+
     else:
-        print("Record NOT Found (Creating new record)")
-        # ... creation logic
+        record = UseCase(
+            use_case=use_case,
+            datasets=[dataset_name],
+            nodes=[node]
+        )
         session.add(record)
 
     session.commit()
-    print("Database committed successfully.")
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -395,6 +405,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
