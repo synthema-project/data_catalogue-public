@@ -60,21 +60,27 @@ def update_use_case(
         logger.error(f"Error updating use-case: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 '''
-def update_use_case(session: Session, use_case: str, dataset_path: str):
+def update_use_case(session: Session, use_case: str, node: str, path: str):
     """
-    Register that a use-case contains a given dataset path.
+    Add dataset (node + path) to a use-case.
     """
     try:
         uc = session.get(UseCase, use_case)
-        entry = {"path": dataset_path}
+
+        dataset_entry = {"node": node, "path": path}
+
         if uc is None:
-            # Create new use-case entry
-            uc = UseCase(use_case=use_case, datasets=[entry])
+            # Create new use-case record
+            uc = UseCase(
+                use_case=use_case,
+                datasets=[dataset_entry]
+            )
             session.add(uc)
+
         else:
-            # Append new dataset if not already present
-            if dataset_path not in uc.datasets:
-                uc.datasets.append(entry)
+            # Avoid duplicates
+            if dataset_entry not in uc.datasets:
+                uc.datasets.append(dataset_entry)
 
         session.commit()
 
@@ -345,6 +351,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
