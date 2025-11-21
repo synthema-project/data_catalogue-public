@@ -86,28 +86,58 @@ def get_dataset_info_from_database(session: Session, path: str):
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def remove_dataset_info_from_database(session: Session, node: str, disease: str, path: str) -> bool:
+#def remove_dataset_info_from_database(session: Session, node: str, disease: str, path: str) -> bool:
+#    try:
+#        # Fetch the dataset info
+#        statement = select(NodeDatasetInfo).where(
+#            NodeDatasetInfo.node == node,
+#            NodeDatasetInfo.disease == disease,
+#            NodeDatasetInfo.path == path #f"{node}/{filename}" ##path
+#        )
+#        logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
+#        dataset_info = session.exec(statement).first()
+#        # Log the dataset info for debugging
+#        print("Dataset info found for deletion:", dataset_info)
+#        if dataset_info:
+#            # Perform deletion
+#            session.delete(dataset_info)
+#            session.commit()
+#            print("Dataset metadata successfully removed.")
+#            return True
+#        print("Dataset metadata not found in the database.")
+#        return False
+#    except Exception as e:
+#        print("Error removing dataset metadata:", e)
+#        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def remove_dataset_info_from_database(session: Session, path: str) -> bool:
     try:
-        # Fetch the dataset info
-        statement = select(NodeDatasetInfo).where(
-            NodeDatasetInfo.node == node,
-            NodeDatasetInfo.disease == disease,
-            NodeDatasetInfo.path == path #f"{node}/{filename}" ##path
-        )
-        logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
+        # Fetch dataset
+        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
-        # Log the dataset info for debugging
-        print("Dataset info found for deletion:", dataset_info)
-        if dataset_info:
-            # Perform deletion
-            session.delete(dataset_info)
-            session.commit()
-            print("Dataset metadata successfully removed.")
-            return True
-        print("Dataset metadata not found in the database.")
-        return False
-    except Exception as e:
-        print("Error removing dataset metadata:", e)
+
+        if not dataset_info:
+            return False
+
+        use_case = dataset_info.use_case
+        node = dataset_info.node
+
+        # delete dataset entry
+        session.delete(dataset_info)
+
+        # update use-case table
+        uc = session.get(UseCase, use_case)
+        if uc:
+            uc.datasets = [d for d in uc.datasets if d["path"] != path]
+
+            if len(uc.datasets) == 0:
+                session.delete(uc)
+
+        session.commit()
+        return True
+
+    except Exception:
+        session.rollback()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def remove_all_datasets_from_database(session: Session):
@@ -293,6 +323,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
