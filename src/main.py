@@ -7,6 +7,7 @@ from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatas
 from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
 from database import create_db_and_tables, get_session, add_use_case_column, add_datasets_column_to_usecases
+from auth import keycloak, get_current_user, get_current_user_with_restricted_role
 import uvicorn
 import logging
 from typing import Dict, Literal, Optional
@@ -306,6 +307,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
