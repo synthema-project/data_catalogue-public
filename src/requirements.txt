@@ -8,3 +8,4 @@ jsonschema
 sqlalchemy
 sqlmodel
 fastapi-keycloak
+starlette
