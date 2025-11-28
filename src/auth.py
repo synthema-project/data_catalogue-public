@@ -7,24 +7,28 @@ import requests
 
 # Keycloak Configuration
 
-KEYCLOAK_SERVER_URL = config.KEYCLOAK_SERVER_URL
-KEYCLOAK_CLIENT_ID = config.KEYCLOAK_CLIENT_ID
-KEYCLOAK_CLIENT_SECRET = config.KEYCLOAK_CLIENT_SECRET
-KEYCLOAK_REALM_NAME = config.KEYCLOAK_REALM_NAME
-KEYCLOAK_REDIRECT_URI = config.KEYCLOAK_REDIRECT_URI
-KEYCLOAK_ADMIN_CLIENT_SECRET = config.KEYCLOAK_ADMIN_CLIENT_SECRET
-KEYCLOAK_AUTHORIZED_GROUP = config.KEYCLOAK_AUTHORIZED_GROUP
-KEYCLOAK_AUTHORIZED_ROLE = config.KEYCLOAK_AUTHORIZED_ROLE
+#KEYCLOAK_SERVER_URL = config.KEYCLOAK_SERVER_URL
+#KEYCLOAK_CLIENT_ID = config.KEYCLOAK_CLIENT_ID
+#KEYCLOAK_CLIENT_SECRET = config.KEYCLOAK_CLIENT_SECRET
+#KEYCLOAK_REALM_NAME = config.KEYCLOAK_REALM_NAME
+#KEYCLOAK_REDIRECT_URI = config.KEYCLOAK_REDIRECT_URI
+#KEYCLOAK_ADMIN_CLIENT_SECRET = config.KEYCLOAK_ADMIN_CLIENT_SECRET
+#KEYCLOAK_AUTHORIZED_GROUP = config.KEYCLOAK_AUTHORIZED_GROUP
+#KEYCLOAK_AUTHORIZED_ROLE = config.KEYCLOAK_AUTHORIZED_ROLE
+
+KEYCLOAK_SERVER_URL=os.getenv("KEYCLOAK_SERVER_URL", "https://users.k8s.synthema.rid-intrasoft.eu" )
+KEYCLOAK_CLIENT_ID=os.getenv("KEYCLOAK_CLIENT_ID", "synthema")
+KEYCLOAK_REALM_NAME=os.getenv("KEYCLOAK_REALM", "Synthema")
 
 # Initialize Keycloak Authentication
 keycloak = FastAPIKeycloak(
     server_url=KEYCLOAK_SERVER_URL,
     client_id=KEYCLOAK_CLIENT_ID,
-    client_secret=KEYCLOAK_CLIENT_SECRET,
-    admin_client_id="admin-client",
+    #client_secret=KEYCLOAK_CLIENT_SECRET,
+    admin_client_id="admin-client", 
     admin_client_secret="pqEnP3qqjaTq7Ux1qEoZ6jjF93cH7qx6",
     realm=KEYCLOAK_REALM_NAME,
-    callback_uri=KEYCLOAK_REDIRECT_URI
+    #callback_uri=KEYCLOAK_REDIRECT_URI
 )
 
 # OAuth2 Configuration
@@ -57,8 +61,8 @@ def get_admin_token():
     data = {
         "grant_type": "password",
         "client_id": "admin-cli",
-        "username": "santibl",
-        "password": "gatvgatv",
+        "username": "f.casadei",
+        "password": "2pQFf0I3IF2Z",
     }
 
     response = requests.post(token_url, data=data)
