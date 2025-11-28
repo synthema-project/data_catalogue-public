@@ -60,9 +60,10 @@ def get_admin_token():
     token_url = f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM_NAME}/protocol/openid-connect/token"
     data = {
         "grant_type": "password",
-        "client_id": "admin-cli",
+        "client_id": "synthema",#"admin-cli",
         "username": "f.casadei",
         "password": "2pQFf0I3IF2Z",
+        "scope": "openid"
     }
 
     response = requests.post(token_url, data=data)
