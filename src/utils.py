@@ -169,7 +169,7 @@ def update_use_case(session, use_case: str, node: str, path: str):
     record = session.get(UseCase, use_case)
 
     # Construct URL from MINIO endpoint
-    minio_url = f"{"obstorageapi.k8s.synthema.rid-intrasoft.eu"}/{path}"
+    minio_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu"/{path}"
 
     if record:
         data = dict(record.datasets)  # force deepcopy
@@ -453,6 +453,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
