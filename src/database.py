@@ -145,8 +145,18 @@ def add_datasets_column_to_usecases():
             connection.rollback()
             print(f"Unexpected error: {e}")
 
+def migrate_usecase_datasets_to_jsonb():
+    with engine.connect() as conn:
+        conn.execute(text("""
+            ALTER TABLE usecases
+            ALTER COLUMN datasets TYPE JSONB
+            USING to_jsonb(datasets);
+        """))
+        conn.commit()
+
 def get_session():
     return Session(engine)
+
 
 
 
