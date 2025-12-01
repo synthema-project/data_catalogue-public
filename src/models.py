@@ -19,6 +19,15 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     path: str
     use_case: str # to change into use_case
 
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    num_records: Optional[int] = None
+    num_features: Optional[int] = None
+    
+    schema: Optional[Dict[str, Any]] = Field(
+        sa_column=Column(JSONB)
+    )
+
 #class UseCase(SQLModel, table=True):
 #    __tablename__ = "usecases"
 #
@@ -120,6 +129,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
