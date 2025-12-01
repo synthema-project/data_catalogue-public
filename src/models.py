@@ -7,7 +7,7 @@ from typing import Optional, List
 from sqlalchemy import Column, String, JSON as JSONType
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from typing import Dict, Any
-
+from pydantic import field_serializer
 from sqlalchemy import Column, String
 
 class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
@@ -20,7 +20,10 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     use_case: str # to change into use_case
 
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
+    @field_serializer("timestamp")
+    def serialize_ts(self, ts: datetime):
+        return ts.isoformat()
+        
     num_records: Optional[int] = None
     num_features: Optional[int] = None
     
@@ -129,6 +132,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
