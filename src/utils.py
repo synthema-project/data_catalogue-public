@@ -190,6 +190,34 @@ def update_use_case(session, use_case: str, node: str, path: str):
 
     session.commit()
 
+def update_use_case(session, use_case_name: str, node: str, dataset_url: str):
+    uc = session.get(UseCase, use_case_name)
+
+    if not uc:
+        # Create a new use case
+        uc = UseCase(
+            use_case=use_case_name,
+            datasets={node: [dataset_url]}
+        )
+        session.add(uc)
+
+    else:
+        # Use-case exists → update datasets
+        datasets = uc.datasets or {}
+
+        if node not in datasets:
+            datasets[node] = []
+
+        # Append without duplication
+        if dataset_url not in datasets[node]:
+            datasets[node].append(dataset_url)
+
+        uc.datasets = datasets
+
+    session.commit()
+    session.refresh(uc)
+    return uc
+
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -453,6 +481,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
