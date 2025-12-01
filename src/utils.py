@@ -6,7 +6,7 @@ import logging
 from typing import Tuple, Literal, Optional, List, Dict, Any
 from enum import Enum
 
-from config import Settings
+from config import Settings, MINIO_ENDPOINT
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -163,6 +163,33 @@ def update_use_case(session, use_case, node, path):
         session.add(record)
 
     session.commit()
+
+
+def update_use_case(session, use_case: str, node: str, path: str):
+    record = session.get(UseCase, use_case)
+
+    # Construct URL from MINIO endpoint
+    minio_url = f"{MINIO_ENDPOINT}/{path}"
+
+    if record:
+        data = dict(record.datasets)  # force deepcopy
+        node_list = data.get(node, [])
+
+        if minio_url not in node_list:
+            node_list.append(minio_url)
+
+        data[node] = node_list
+        record.datasets = data
+
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets={node: [minio_url]}
+        )
+        session.add(record)
+
+    session.commit()
+
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -426,6 +453,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
