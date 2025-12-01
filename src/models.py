@@ -68,10 +68,17 @@ class UseCase(SQLModel, table=True):
 
     use_case: str = Field(primary_key=True)
 
-    datasets: List[str] = Field(
-        default_factory=list,
-        sa_column=Column(ARRAY(String), nullable=False)
+    #datasets: List[str] = Field(
+    #    default_factory=list,
+    #    sa_column=Column(ARRAY(String), nullable=False)
+    #)
+
+    # dictionary mapping node → list of URLs
+    datasets: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        sa_column=Column(JSONB, nullable=False)
     )
+
     #nodes: list[str] = Field(
     #    default_factory=list,
     #    sa_column=Column(ARRAY(String), nullable=False)
@@ -132,6 +139,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
