@@ -6,7 +6,7 @@ import logging
 from typing import Tuple, Literal, Optional, List, Dict, Any
 from enum import Enum
 
-from config import Settings, MINIO_ENDPOINT
+from config import Settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -453,6 +453,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
