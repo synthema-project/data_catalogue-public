@@ -190,33 +190,31 @@ def update_use_case(session, use_case: str, node: str, path: str):
 
     session.commit()
 
-def update_use_case(session, use_case_name: str, node: str, dataset_url: str):
-    uc = session.get(UseCase, use_case_name)
+def update_use_case(session, use_case: str, node: str, path: str):
+    record = session.get(UseCase, use_case)
 
-    if not uc:
-        # Create a new use case
-        uc = UseCase(
-            use_case=use_case_name,
-            datasets={node: [dataset_url]}
-        )
-        session.add(uc)
+    # Construct URL from MINIO endpoint
+    minio_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+
+    if record:
+        # ensure full copy so SQLAlchemy detects mutation
+        data = dict(record.datasets or {})
+
+        # always append blindly
+        node_list = list(data.get(node, []))
+        node_list.append(minio_url)
+
+        data[node] = node_list
+        record.datasets = data  # reassign to trigger update
 
     else:
-        # Use-case exists → update datasets
-        datasets = uc.datasets or {}
-
-        if node not in datasets:
-            datasets[node] = []
-
-        # Append without duplication
-        if dataset_url not in datasets[node]:
-            datasets[node].append(dataset_url)
-
-        uc.datasets = datasets
+        record = UseCase(
+            use_case=use_case,
+            datasets={node: [minio_url]}
+        )
+        session.add(record)
 
     session.commit()
-    session.refresh(uc)
-    return uc
 
 #def get_dataset_info_from_database(
 #    session: Session,
@@ -481,6 +479,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
