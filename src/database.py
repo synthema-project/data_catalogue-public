@@ -17,6 +17,76 @@ def create_db_and_tables():
     #SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
 
+def add_new_metadata_columns():
+    with engine.connect() as connection:
+        try:
+            connection.execute(text("""
+                DO $$
+                BEGIN
+                    -- Add use_case column
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo'
+                        AND column_name = 'use_case'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo
+                        ADD COLUMN use_case VARCHAR(255);
+                    END IF;
+
+                    -- Add timestamp column
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo'
+                        AND column_name = 'timestamp'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo
+                        ADD COLUMN timestamp TIMESTAMP;
+                    END IF;
+
+                    -- Add num_records column
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo'
+                        AND column_name = 'num_records'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo
+                        ADD COLUMN num_records INTEGER;
+                    END IF;
+
+                    -- Add num_features column
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo'
+                        AND column_name = 'num_features'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo
+                        ADD COLUMN num_features INTEGER;
+                    END IF;
+
+                    -- Add schema column
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo'
+                        AND column_name = 'schema'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo
+                        ADD COLUMN schema JSONB;
+                    END IF;
+                END $$;
+            """))
+
+            connection.commit()
+            print("Columns added successfully!")
+
+        except ProgrammingError as e:
+            connection.rollback()
+            print(f"SQL error while adding columns: {e}")
+
+        except Exception as e:
+            connection.rollback()
+            print(f"Unexpected error: {e}")
+
+'''
 def add_use_case_column():
     with engine.connect() as connection:
         try:
@@ -41,6 +111,7 @@ def add_use_case_column():
         except Exception as e:
             connection.rollback()
             print(f"Errore inatteso: {e}")
+'''
 
 def add_datasets_column_to_usecases():
     """
@@ -76,6 +147,7 @@ def add_datasets_column_to_usecases():
 
 def get_session():
     return Session(engine)
+
 
 
 
