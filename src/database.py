@@ -147,15 +147,39 @@ def add_datasets_column_to_usecases():
 
 def migrate_usecase_datasets_to_jsonb():
     with engine.connect() as conn:
-        conn.execute(text("""
-            ALTER TABLE usecases
-            ALTER COLUMN datasets TYPE JSONB
-            USING to_jsonb(datasets);
-        """))
-        conn.commit()
+        try:
+            # 1. Drop existing default (ARRAY default incompatible)
+            conn.execute(text("""
+                ALTER TABLE usecases
+                ALTER COLUMN datasets DROP DEFAULT;
+            """))
+
+            # 2. Convert the column type to JSONB
+            conn.execute(text("""
+                ALTER TABLE usecases
+                ALTER COLUMN datasets TYPE JSONB
+                USING to_jsonb(datasets);
+            """))
+
+            # 3. Add a JSONB default
+            conn.execute(text("""
+                ALTER TABLE usecases
+                ALTER COLUMN datasets
+                SET DEFAULT '{}'::jsonb;
+            """))
+
+            conn.commit()
+            print("Migration completed successfully!")
+
+        except Exception as e:
+            conn.rollback()
+            print("Migration failed:", e)
+            raise
+
 
 def get_session():
     return Session(engine)
+
 
 
 
