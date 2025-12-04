@@ -70,7 +70,7 @@ async def save_dataset_info_to_database_endpoint(
     except Exception as e:
         logger.exception("Unexpected error while saving dataset info to the database")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
+'''
 @app.get("/usecases", tags=["data-catalogue"])
 async def get_use_cases(
     session: Session = Depends(get_session),
@@ -96,7 +96,37 @@ def get_use_case(
         "use_case": record.use_case,
         "datasets": record.datasets
     }
+'''
+@app.get("/usecases", tags=["data-catalogue"])
+async def get_use_cases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    use_cases = get_all_use_cases(session)
+    return {"use_cases": [uc.model_dump() for uc in use_cases]}
 
+
+@app.get("/usecases/{use_case}", tags=["data-catalogue"])
+async def get_use_case(
+    use_case: str,
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    record = get_single_use_case(session, use_case)
+
+    return {
+        "use_case": record.use_case,
+        "datasets": record.datasets
+    }
+
+
+@app.delete("/usecases/all", tags=["data-catalogue"])
+async def delete_all_usecases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    delete_all_use_cases(session)
+    return {"detail": "All use-cases have been deleted"}
 
 
 
@@ -122,7 +152,7 @@ async def get_all_datasets(
     if not datasets:
         raise HTTPException(status_code=404, detail="No datasets found")
     return {"datasets": datasets}
-
+'''
 @app.delete("/usecases/all")
 def delete_all_usecases(
     session: Session = Depends(get_session),
@@ -131,7 +161,7 @@ def delete_all_usecases(
     session.exec(delete(UseCase))
     session.commit()
     return {"All use-cases have been deleted"}
-
+'''
 #@app.delete("/metadata", tags=["data-catalogue"])
 #async def delete_dataset(
 #    #removedatasetobject: RemoveDatasetObject, 
@@ -341,6 +371,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
