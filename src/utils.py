@@ -307,6 +307,33 @@ def remove_all_datasets_from_database(session: Session):
         print("Error removing all datasets from database:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
+
+def get_all_use_cases(session: Session):
+    """Return all use-case records."""
+    statement = select(UseCase)
+    return session.exec(statement).all()
+
+
+def get_single_use_case(session: Session, use_case: str):
+    """Return a single use case or raise 404."""
+    statement = select(UseCase).where(UseCase.use_case == use_case)
+    result = session.exec(statement).first()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Use case not found")
+
+    return result
+
+
+def delete_all_use_cases(session: Session):
+    """Delete all use-case records."""
+    session.exec(
+        UseCase.__table__.delete()   # SQLModel-correct bulk delete
+    )
+    session.commit()
+    return True
+
+
 async def fetch_all_datasets(session: Session):
     try:
         statement = select(NodeDatasetInfo)
@@ -479,6 +506,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
