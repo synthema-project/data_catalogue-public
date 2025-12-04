@@ -7,7 +7,7 @@ from sqlalchemy import delete
 from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
-from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases
+from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets
 from database import create_db_and_tables, get_session, add_datasets_column_to_usecases, add_new_metadata_columns, migrate_usecase_datasets_to_jsonb #add_use_case_column, 
 from auth import UserClaims, require_authentication
 import uvicorn
@@ -128,6 +128,14 @@ async def delete_all_usecases(
 ):
     delete_all_use_cases(session)
     return {"detail": "All use-cases have been deleted"}
+
+@app.delete("/usecases/all")
+def delete_all_usecases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    delete_all_use_cases_and_datasets(session)
+    return {"message": "All use-cases and all datasets have been deleted"}
 
 
 
@@ -372,6 +380,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
