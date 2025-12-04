@@ -3,7 +3,7 @@ import pytest
 from sqlmodel import Session
 from database import engine
 from models import UseCase
-from services.usecase_service import update_use_case
+from utils import update_use_case
 
 
 @pytest.fixture
