@@ -333,6 +333,22 @@ def delete_all_use_cases(session: Session):
     session.commit()
     return True
 
+def delete_all_use_cases_and_datasets(session: Session):
+    """
+    Deletes all use-cases AND all dataset entries.
+    """
+    session.exec(delete(NodeDatasetInfo))
+    session.exec(delete(UseCase))
+    session.commit()
+
+
+def delete_all_datasets_and_usecases(session: Session):
+    """
+    Same as above, but callable from datasets endpoint.
+    Keeps logic consistent.
+    """
+    delete_all_use_cases_and_datasets(session)
+
 
 async def fetch_all_datasets(session: Session):
     try:
@@ -506,6 +522,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
