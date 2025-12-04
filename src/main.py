@@ -48,7 +48,7 @@ def on_startup():
 async def save_dataset_info_to_database_endpoint(
     node_dataset: NodeDatasetInfo, 
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
 #async def save_dataset_info_to_database_endpoint(node : str, disease : str, path : str, session: Session = Depends(get_session)):
     try:
@@ -100,7 +100,7 @@ def get_use_case(
 @app.get("/usecases", tags=["data-catalogue"])
 async def get_use_cases(
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     use_cases = get_all_use_cases(session)
     return {"use_cases": [uc.model_dump() for uc in use_cases]}
@@ -110,7 +110,7 @@ async def get_use_cases(
 async def get_use_case(
     use_case: str,
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     record = get_single_use_case(session, use_case)
 
@@ -123,7 +123,7 @@ async def get_use_case(
 @app.delete("/usecases/all", tags=["data-catalogue"])
 async def delete_all_usecases(
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     delete_all_use_cases(session)
     return {"detail": "All use-cases have been deleted"}
@@ -135,7 +135,7 @@ async def retrieve_dataset_info(
     node: str, 
     disease: str, 
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     try:
         dataset_info = get_dataset_info_from_database(session, node, disease)
@@ -146,7 +146,7 @@ async def retrieve_dataset_info(
 @app.get("/metadata", tags=["data-catalogue"])
 async def get_all_datasets(
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     datasets = await fetch_all_datasets(session)
     if not datasets:
@@ -217,7 +217,7 @@ def delete_all_usecases(
 async def delete_dataset(
     path: str,
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     try:
         result = remove_dataset_info_from_database(session, path=path)
@@ -232,7 +232,7 @@ async def delete_dataset(
 @app.delete("/metadata/all", tags=["data-catalogue"])
 async def delete_all_datasets(
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     try:
         remove_all_datasets_from_database(session)
@@ -371,6 +371,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
