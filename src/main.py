@@ -137,8 +137,6 @@ def delete_all_usecases(
     delete_all_use_cases_and_datasets(session)
     return {"message": "All use-cases and all datasets have been deleted"}
 
-
-
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
 async def retrieve_dataset_info(
     node: str, 
@@ -380,6 +378,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
