@@ -9,4 +9,5 @@ sqlalchemy
 sqlmodel
 fastapi-keycloak
 starlette
-keycloak-client
+python-keycloak
+jwcrypto
