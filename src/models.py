@@ -84,11 +84,6 @@ class UseCase(SQLModel, table=True):
     #    sa_column=Column(ARRAY(String), nullable=False)
     #)
 
-class UseCase(SQLModel, table=True):
-    use_case: str = Field(primary_key=True)
-    datasets: dict = Field(
-        sa_column=Column(JSON, nullable=False, default={})
-    )
 
 
 class RemoveDatasetObject(BaseModel):
@@ -145,6 +140,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
