@@ -216,6 +216,25 @@ def update_use_case(session, use_case: str, node: str, path: str):
 
     session.commit()
 
+def update_use_case(session: Session, use_case: str, node: str, filename: str):
+    uc = session.get(UseCase, use_case)
+
+    if not uc:
+        uc = UseCase(use_case=use_case, datasets={})
+        session.add(uc)
+
+    # Ensure dict format
+    if not isinstance(uc.datasets, dict):
+        uc.datasets = {}
+
+    if node not in uc.datasets:
+        uc.datasets[node] = []
+
+    if filename not in uc.datasets[node]:
+        uc.datasets[node].append(filename)
+
+    session.commit()
+
 #def get_dataset_info_from_database(
 #    session: Session,
 #    node: str, disease: str):
@@ -286,6 +305,47 @@ def remove_dataset_info_from_database(session: Session, path: str) -> bool:
         if uc:
             uc.datasets = [d for d in uc.datasets if d != path]
 
+            if len(uc.datasets) == 0:
+                session.delete(uc)
+
+        session.commit()
+        return True
+
+    except Exception:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def remove_dataset_info_from_database(session: Session, path: str) -> bool:
+    try:
+        # Fetch dataset entry
+        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
+        dataset_info = session.exec(statement).first()
+        if not dataset_info:
+            return False
+
+        use_case = dataset_info.use_case
+        node = dataset_info.node
+
+        # Remove dataset entry
+        session.delete(dataset_info)
+
+        # Update use-case structure safely
+        uc = session.get(UseCase, use_case)
+        if uc:
+            # Ensure datasets is always a dict
+            if not isinstance(uc.datasets, dict):
+                uc.datasets = {}
+
+            if node in uc.datasets:
+                uc.datasets[node] = [
+                    d for d in uc.datasets[node] if d != path
+                ]
+
+                # OPTIONAL: remove node if empty
+                # if len(uc.datasets[node]) == 0:
+                #     del uc.datasets[node]
+
+            # Remove use-case ONLY if no nodes remain
             if len(uc.datasets) == 0:
                 session.delete(uc)
 
@@ -539,6 +599,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
