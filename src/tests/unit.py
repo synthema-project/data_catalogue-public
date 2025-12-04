@@ -110,7 +110,7 @@ def test_remove_dataset_from_use_case(session):
     uc = get_use_case(session, "aml1")
     assert uc.datasets["NODE1"] == ["file2.csv"]
 
-'''
+
 def test_remove_dataset_last_file_removes_node_key(session):
     """If the last file under a node is removed, the node key should disappear."""
     update_use_case(
@@ -122,3 +122,4 @@ def test_remove_dataset_last_file_removes_node_key(session):
 
     uc = get_use_case(session, "aml1")
     assert "NODE1" not in uc.datasets
+'''
