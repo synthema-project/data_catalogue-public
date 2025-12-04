@@ -129,13 +129,13 @@ async def delete_all_usecases(
     delete_all_use_cases(session)
     return {"detail": "All use-cases have been deleted"}
 
-@app.delete("/usecases/all")
+@app.delete("/usecases/all", tags=["data-catalogue"])
 def delete_all_usecases(
     session: Session = Depends(get_session),
     ##current_user: UserClaims = Depends(require_authentication)
 ):
     delete_all_use_cases_and_datasets(session)
-    return {"message": "All use-cases and all datasets have been deleted"}
+    return {"detail": "All use-cases AND dataset metadata have been deleted"}
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
 async def retrieve_dataset_info(
@@ -378,6 +378,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
