@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from main import app
 from database import get_session
 from models import UseCase
-from utils import update_use_case, remove_dataset_from_use_case #get_use_case,
+from utils import update_use_case,# remove_dataset_from_use_case #get_use_case,
 
 
 # ---------------------------------------------------------------------
