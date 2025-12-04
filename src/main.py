@@ -98,6 +98,7 @@ def get_use_case(
         "datasets": record.datasets
     }
 '''
+'''
 @app.get("/usecases", tags=["data-catalogue"])
 async def get_use_cases(
     session: Session = Depends(get_session),
@@ -105,6 +106,15 @@ async def get_use_cases(
 ):
     use_cases = get_all_use_cases(session)
     return {"use_cases": [uc.model_dump() for uc in use_cases]}
+'''
+@app.get("/usecases")
+def get_uc(session: Session = Depends(get_session)):
+    ucs = session.exec(select(UseCase)).all()
+    for uc in ucs:
+        # guarantee dict format
+        if not isinstance(uc.datasets, dict):
+            uc.datasets = {}
+    return {"use_cases": [uc.model_dump() for uc in ucs]}
 
 
 @app.get("/usecases/{use_case}", tags=["data-catalogue"])
@@ -378,6 +388,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
