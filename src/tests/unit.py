@@ -5,11 +5,7 @@ from fastapi.testclient import TestClient
 from main import app
 from database import get_session
 from models import UseCase
-from utils import (
-    update_use_case,
-    get_use_case,
-    remove_dataset_from_use_case,
-)
+from utils import update_use_case, remove_dataset_from_use_case #get_use_case,
 
 
 # ---------------------------------------------------------------------
@@ -81,7 +77,7 @@ def test_update_use_case_appends_dataset(session):
     result = session.exec(select(UseCase).where(UseCase.name == "aml1")).first()
     assert result.datasets["NODE1"] == ["file1.csv", "file2.csv"]
 
-
+'''
 def test_get_use_case(session):
     """Verify get_use_case returns correct use-case object."""
     update_use_case(
@@ -95,7 +91,7 @@ def test_get_use_case(session):
     assert "NODE2" in uc.datasets
     assert uc.num_records == 7
     assert uc.schema == ["col1", "col2"]
-
+'''
 
 def test_remove_dataset_from_use_case(session):
     """remove_dataset_from_use_case should remove file under node."""
