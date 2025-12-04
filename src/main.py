@@ -84,7 +84,7 @@ async def get_use_cases(
 @app.get("/usecases/{use_case}")
 def get_use_case(
     use_case: str, 
-    db: Session = Depends(get_session)
+    db: Session = Depends(get_session),
     current_user: UserClaims = Depends(require_authentication)
 ):
     record = db.query(UseCase).filter_by(use_case=use_case).first()
@@ -341,6 +341,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
