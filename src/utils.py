@@ -335,11 +335,22 @@ def delete_all_use_cases(session: Session):
 
 def delete_all_use_cases_and_datasets(session: Session):
     """
-    Deletes all use-cases AND all dataset entries.
+    Deletes all use-cases AND all dataset metadata in a single transaction.
     """
-    session.exec(delete(NodeDatasetInfo))
-    session.exec(delete(UseCase))
-    session.commit()
+
+    try:
+        # Delete dataset metadata first
+        session.exec(delete(NodeDatasetInfo))
+
+        # Delete use cases
+        session.exec(delete(UseCase))
+
+        session.commit()
+
+    except Exception as e:
+        session.rollback()
+        print("Error deleting all use-cases and datasets:", e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 def delete_all_datasets_and_usecases(session: Session):
@@ -522,6 +533,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
