@@ -25,16 +25,16 @@ pipeline {
                 sh 'docker image push ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test'
             }
         }
-/*
+///*
         // **************************
         // *** RUN THE UNIT TESTS ***
         // **************************
         stage("Unit_Tests"){
             steps{
-                sh 'docker container run -e "PYTHONPATH=/tests" --name ${APP_NAME}_test_$(date +%s) --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test python -m pytest tests/test_unit2.py' //-p 83:83
+                sh 'docker container run -e "PYTHONPATH=/tests" --name ${APP_NAME}_test_$(date +%s) --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test python -m pytest tests/unit.py' //-p 83:83
             }
         }
-
+/*
         // **************************************
         // *** Functional & Integration Tests ***
         // **************************************
