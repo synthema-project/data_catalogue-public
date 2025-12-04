@@ -216,24 +216,6 @@ def update_use_case(session, use_case: str, node: str, path: str):
 
     session.commit()
 
-def update_use_case(session: Session, use_case: str, node: str, filename: str):
-    uc = session.get(UseCase, use_case)
-
-    if not uc:
-        uc = UseCase(use_case=use_case, datasets={})
-        session.add(uc)
-
-    # Ensure dict format
-    if not isinstance(uc.datasets, dict):
-        uc.datasets = {}
-
-    if node not in uc.datasets:
-        uc.datasets[node] = []
-
-    if filename not in uc.datasets[node]:
-        uc.datasets[node].append(filename)
-
-    session.commit()
 
 #def get_dataset_info_from_database(
 #    session: Session,
@@ -315,7 +297,7 @@ def remove_dataset_info_from_database(session: Session, path: str) -> bool:
         session.rollback()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def remove_dataset_info_from_database(session: Session, path: str) -> bool:
+def remove_dataset_info_from_database(session: Session, path: str) -> bool: ###
     try:
         # Fetch dataset entry
         statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
@@ -599,6 +581,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
