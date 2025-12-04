@@ -339,13 +339,19 @@ def delete_all_use_cases_and_datasets(session: Session):
     """
 
     try:
-        # Delete dataset metadata first
-        session.exec(delete(NodeDatasetInfo))
+        statement = select(NodeDatasetInfo)
+        datasets = session.exec(statement).all()
+        for dataset in datasets:
+            session.delete(dataset)
+        session.commit()
 
         # Delete use cases
-        session.exec(delete(UseCase))
-
+        """Delete all use-case records."""
+        session.exec(
+        UseCase.__table__.delete()   # SQLModel-correct bulk delete
+        )
         session.commit()
+        return True
 
     except Exception as e:
         session.rollback()
@@ -533,6 +539,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
