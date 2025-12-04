@@ -72,14 +72,21 @@ async def save_dataset_info_to_database_endpoint(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/usecases", tags=["data-catalogue"])
-async def get_use_cases(session: Session = Depends(get_session)):
+async def get_use_cases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
     statement = select(UseCase)
     ucs = session.exec(statement).all()
 
     return {"use_cases": [uc.model_dump() for uc in ucs]}
 
 @app.get("/usecases/{use_case}")
-def get_use_case(use_case: str, db: Session = Depends(get_session)):
+def get_use_case(
+    use_case: str, 
+    db: Session = Depends(get_session)
+    current_user: UserClaims = Depends(require_authentication)
+):
     record = db.query(UseCase).filter_by(use_case=use_case).first()
 
     if not record:
@@ -94,7 +101,12 @@ def get_use_case(use_case: str, db: Session = Depends(get_session)):
 
 
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
-async def retrieve_dataset_info(node: str, disease: str, session: Session = Depends(get_session)):
+async def retrieve_dataset_info(
+    node: str, 
+    disease: str, 
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
     try:
         dataset_info = get_dataset_info_from_database(session, node, disease)
         return dataset_info.dict()
@@ -102,14 +114,20 @@ async def retrieve_dataset_info(node: str, disease: str, session: Session = Depe
         raise e
 
 @app.get("/metadata", tags=["data-catalogue"])
-async def get_all_datasets(session: Session = Depends(get_session)):
+async def get_all_datasets(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
     datasets = await fetch_all_datasets(session)
     if not datasets:
         raise HTTPException(status_code=404, detail="No datasets found")
     return {"datasets": datasets}
 
 @app.delete("/usecases/all")
-def delete_all_usecases(session: Session = Depends(get_session)):
+def delete_all_usecases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
     session.exec(delete(UseCase))
     session.commit()
     return {"All use-cases have been deleted"}
@@ -168,7 +186,8 @@ def delete_all_usecases(session: Session = Depends(get_session)):
 @app.delete("/metadata", tags=["data-catalogue"])
 async def delete_dataset(
     path: str,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
 ):
     try:
         result = remove_dataset_info_from_database(session, path=path)
@@ -181,7 +200,10 @@ async def delete_dataset(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/metadata/all", tags=["data-catalogue"])
-async def delete_all_datasets(session: Session = Depends(get_session)):
+async def delete_all_datasets(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
     try:
         remove_all_datasets_from_database(session)
         return {"message": "All datasets deleted successfully."}
@@ -319,6 +341,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
