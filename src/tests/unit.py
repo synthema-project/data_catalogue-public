@@ -3,8 +3,8 @@
 import pytest
 from sqlmodel import SQLModel, create_engine, Session
 
-from data_catalogue.crud import update_use_case
-from data_catalogue.models import UseCase
+from utils import update_use_case
+from models import UseCase
 
 
 # -------------------------------------------------------
