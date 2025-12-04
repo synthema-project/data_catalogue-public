@@ -132,7 +132,7 @@ async def delete_all_usecases(
 @app.delete("/usecases/all")
 def delete_all_usecases(
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     delete_all_use_cases_and_datasets(session)
     return {"message": "All use-cases and all datasets have been deleted"}
@@ -380,6 +380,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
