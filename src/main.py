@@ -124,7 +124,6 @@ async def get_use_cases(
             for uc in ucs
         ]
     }
-}
 
 
 @app.get("/usecases/{use_case}", tags=["data-catalogue"])
@@ -413,6 +412,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
