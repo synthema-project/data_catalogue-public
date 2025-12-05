@@ -415,6 +415,31 @@ def remove_single_dataset_from_use_case(session: Session, dataset_path: str) -> 
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+def delete_dataset_everywhere(session: Session, filename: str) -> bool:
+    """
+    Deletes a dataset by filename from:
+    - NodeDatasetInfo metadata table
+    - UseCase datasets JSON structure
+    """
+
+    # 1. Find metadata entry using filename
+    stmt = select(NodeDatasetInfo).where(NodeDatasetInfo.path.contains(filename))
+    dataset = session.exec(stmt).first()
+
+    if not dataset:
+        return False
+
+    full_path = dataset.path  # full MinIO URL
+
+    # 2. Delete metadata entry
+    session.delete(dataset)
+    session.commit()
+
+    # 3. Remove from use-case datasets
+    remove_dataset_from_use_case(session, full_path)
+
+    return True
+
 async def fetch_all_datasets(session: Session):
     try:
         statement = select(NodeDatasetInfo)
@@ -587,6 +612,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
