@@ -7,7 +7,7 @@ from sqlalchemy import delete
 from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
-from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets, remove_single_dataset_from_use_case
+from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets, remove_single_dataset_from_use_case, delete_dataset_everywhere
 from database import create_db_and_tables, get_session, add_datasets_column_to_usecases, add_new_metadata_columns, migrate_usecase_datasets_to_jsonb #add_use_case_column, 
 from auth import UserClaims, require_authentication
 import uvicorn
@@ -266,6 +266,22 @@ def delete_dataset_from_use_case(
 
     return {"detail": "Dataset removed from use-case(s)"}
 
+@app.delete("/metadata", tags=["data-catalogue"])
+async def delete_dataset(
+    filename: str,
+    session: Session = Depends(get_session),
+    # current_user: UserClaims = Depends(require_authentication)
+):
+    result = delete_dataset_everywhere(session, filename)
+
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset '{filename}' not found."
+        )
+
+    return {"message": f"Dataset '{filename}' deleted successfully from metadata and use-cases."}
+
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def request_synthetic_data_generation(
     sdg_request_status: SyntheticDatasetGenerationRequestStatus,
@@ -393,6 +409,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
