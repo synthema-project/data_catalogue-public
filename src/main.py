@@ -276,7 +276,7 @@ async def delete_all_datasets(
 def delete_dataset_from_use_case(
     dataset_path: str,
     session: Session = Depends(get_session),
-    current_user: UserClaims = Depends(require_authentication)
+    #current_user: UserClaims = Depends(require_authentication)
 ):
     removed = remove_single_dataset_from_use_case(session, dataset_path)
 
@@ -413,6 +413,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
