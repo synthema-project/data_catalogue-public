@@ -7,7 +7,7 @@ from sqlalchemy import delete
 from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
 from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
-from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets
+from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets, remove_dataset_from_use_case
 from database import create_db_and_tables, get_session, add_datasets_column_to_usecases, add_new_metadata_columns, migrate_usecase_datasets_to_jsonb #add_use_case_column, 
 from auth import UserClaims, require_authentication
 import uvicorn
@@ -253,6 +253,19 @@ async def delete_all_datasets(
         logging.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/usecases/dataset", tags=["data-catalogue"])
+def delete_dataset_from_use_case(
+    dataset_path: str,
+    session: Session = Depends(get_session),
+    #current_user: UserClaims = Depends(require_authentication)
+):
+    removed = remove_dataset_from_use_case(session, dataset_path)
+
+    if not removed:
+        raise HTTPException(status_code=404, detail="Dataset not found in any use-case")
+
+    return {"message": f"Dataset '{dataset_path}' deleted from use-cases"}
+
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def request_synthetic_data_generation(
     sdg_request_status: SyntheticDatasetGenerationRequestStatus,
@@ -380,6 +393,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
