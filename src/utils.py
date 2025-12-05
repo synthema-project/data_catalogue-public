@@ -368,43 +368,52 @@ def delete_all_datasets_and_usecases(session: Session):
     """
     delete_all_use_cases_and_datasets(session)
 
-def remove_dataset_from_use_case(session: Session, dataset_path: str) -> bool:
+def remove_single_dataset_from_use_case(session: Session, dataset_path: str) -> bool:
     """
-    Removes a dataset path from ALL use-cases without deleting the entire
-    use-case unless it becomes completely empty.
+    Remove a single dataset file (minio URL) from all use-cases.
+
+    Example:
+    input:  'minio/data1.csv'
+    result:
+        datasets = {
+            "NODE1": ["minio/data2.csv"]
+        }
     """
+    try:
+        # Fetch ALL use-cases
+        statement = select(UseCase)
+        use_cases = session.exec(statement).all()
 
-    # Find all use-cases that contain this dataset
-    statement = select(UseCase)
-    use_cases = session.exec(statement).all()
+        changed = False
 
-    found = False
+        for uc in use_cases:
+            new_datasets = {}
 
-    for uc in use_cases:
-        updated = False
+            for node, paths in uc.datasets.items():
+                # Filter the list
+                filtered = [p for p in paths if p != dataset_path]
 
-        for node, paths in uc.datasets.items():
-            if dataset_path in paths:
-                found = True
-                updated = True
-                uc.datasets[node] = [p for p in paths if p != dataset_path]
+                if filtered:
+                    new_datasets[node] = filtered
+                # If empty list → remove node completely
 
-        # Clean up empty node entries
-        uc.datasets = {node: paths for node, paths in uc.datasets.items() if len(paths) > 0}
+            # If the dataset was removed
+            if new_datasets != uc.datasets:
+                changed = True
+                uc.datasets = new_datasets
 
-        # If everything is empty, delete the use-case entirely
-        if updated:
-            if len(uc.datasets) == 0:
+            # If after removal the use-case is empty → delete use-case
+            if not uc.datasets:
                 session.delete(uc)
-            else:
-                session.add(uc)
 
-    if not found:
-        return False
+        if changed:
+            session.commit()
 
-    session.commit()
-    return True
+        return changed
 
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def fetch_all_datasets(session: Session):
     try:
@@ -578,6 +587,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
