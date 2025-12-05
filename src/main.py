@@ -255,24 +255,17 @@ async def delete_all_datasets(
 
 # If you use app (not a router), add it to the same file:
 @app.delete("/usecases/dataset", tags=["data-catalogue"])
-async def remove_dataset_from_use_case_endpoint(
-    path: str,  # full minio url, e.g. obstorage.synthema.eu/aml1_NODE1_xxx.csv
+def delete_dataset_from_use_case(
+    dataset_path: str,
     session: Session = Depends(get_session),
-    # current_user: UserClaims = Depends(require_authentication)    # optional auth
+    current_user: UserClaims = Depends(require_authentication)
 ):
-    """
-    Remove a specific dataset (given by its full URL/path) from any UseCase entry.
-    Query param: ?path=<full_minio_url_or_path>
-    """
-    try:
-        removed = remove_single_dataset_from_use_case(session, dataset_url=path)
-        if removed:
-            return {"message": "Dataset removed from use-cases"}
-        raise HTTPException(status_code=404, detail="Dataset not found in use-cases")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    removed = remove_single_dataset_from_use_case(session, dataset_path)
+
+    if not removed:
+        raise HTTPException(status_code=404, detail="Dataset not found in any use-case")
+
+    return {"detail": "Dataset removed from use-case(s)"}
 
 
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
@@ -402,6 +395,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
