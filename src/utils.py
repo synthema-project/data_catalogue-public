@@ -368,52 +368,58 @@ def delete_all_datasets_and_usecases(session: Session):
     """
     delete_all_use_cases_and_datasets(session)
 
-def remove_single_dataset_from_use_case(session: Session, dataset_path: str) -> bool:
-    """
-    Remove a single dataset file (minio URL) from all use-cases.
 
-    Example:
-    input:  'minio/data1.csv'
-    result:
-        datasets = {
-            "NODE1": ["minio/data2.csv"]
-        }
+def remove_single_dataset_from_use_case(session: Session, dataset_url: str) -> bool:
+    """
+    Remove a dataset (full miniourl path) from the UseCase.datasets structure.
+
+    UseCase.datasets structure is:
+      { "NODE1": ["minio_url/a.csv", "minio_url/b.csv"], "NODE2": [...] }
+
+    Returns True if an entry was removed (and DB committed), False if not found.
     """
     try:
-        # Fetch ALL use-cases
-        statement = select(UseCase)
-        use_cases = session.exec(statement).all()
+        # Find the usecase record that contains this dataset_url anywhere
+        # We can't directly query JSONB contents portably; fetch all UseCase rows and scan.
+        from models import UseCase  # local import to avoid circular import at top-level
 
-        changed = False
+        statement = session.query(UseCase)
+        for uc in statement:
+            datasets: Dict[str, list] = dict(uc.datasets or {})
+            changed = False
 
-        for uc in use_cases:
-            new_datasets = {}
+            # iterate node keys and remove dataset_url if present
+            for node, urls in list(datasets.items()):
+                # urls is expected to be a list of strings
+                new_urls = [u for u in urls if u != dataset_url]
+                if len(new_urls) != len(urls):
+                    # something was removed
+                    datasets[node] = new_urls
+                    changed = True
 
-            for node, paths in uc.datasets.items():
-                # Filter the list
-                filtered = [p for p in paths if p != dataset_path]
+            # Remove node entries that now have empty lists
+            for node in list(datasets.keys()):
+                if not datasets[node]:
+                    datasets.pop(node)
 
-                if filtered:
-                    new_datasets[node] = filtered
-                # If empty list → remove node completely
+            if changed:
+                if datasets:
+                    uc.datasets = datasets
+                    session.add(uc)
+                else:
+                    # no datasets left -> remove the UseCase row
+                    session.delete(uc)
+                session.commit()
+                logger.info(f"Removed {dataset_url} from use-case {uc.use_case}")
+                return True
 
-            # If the dataset was removed
-            if new_datasets != uc.datasets:
-                changed = True
-                uc.datasets = new_datasets
-
-            # If after removal the use-case is empty → delete use-case
-            if not uc.datasets:
-                session.delete(uc)
-
-        if changed:
-            session.commit()
-
-        return changed
+        # not found
+        return False
 
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error removing dataset from use-case")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 async def fetch_all_datasets(session: Session):
@@ -588,6 +594,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
