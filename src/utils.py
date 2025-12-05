@@ -272,7 +272,7 @@ def remove_dataset_info_from_database(session: Session, path: str) -> bool:
         # Fetch dataset
         statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
-
+        path_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
         if not dataset_info:
             return False
 
@@ -285,7 +285,7 @@ def remove_dataset_info_from_database(session: Session, path: str) -> bool:
        # update use-case table
         uc = session.get(UseCase, use_case)
         if uc:
-            uc.datasets = [d for d in uc.datasets if d != path]
+            uc.datasets = [d for d in uc.datasets if d != path_url]
 
             if len(uc.datasets) == 0:
                 session.delete(uc)
@@ -589,6 +589,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
