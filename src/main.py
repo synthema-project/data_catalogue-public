@@ -268,19 +268,30 @@ def delete_dataset_from_use_case(
 
 @app.delete("/metadata", tags=["data-catalogue"])
 async def delete_dataset(
-    filename: str,
+    path: str = Query(...),
     session: Session = Depends(get_session),
-    # current_user: UserClaims = Depends(require_authentication)
 ):
-    result = delete_dataset_everywhere(session, filename)
+    try:
+        # 1️⃣ delete metadata from NodeDatasetInfo
+        result = remove_dataset_info_from_database(session, path=path)
 
-    if not result:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Dataset '{filename}' not found."
-        )
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Dataset '{path}' not found in metadata."
+            )
 
-    return {"message": f"Dataset '{filename}' deleted successfully from metadata and use-cases."}
+        # 2️⃣ also remove dataset from use-case table
+        npath = "obstorageapi.k8s.synthema.rid-intrasoft.eu/"+ str(path)
+        removed_from_uc = remove_single_dataset_from_use_case(session, dataset_url=npath)
+
+        return {
+            "message": f"Dataset '{path}' deleted successfully.",
+            "removed_from_use_cases": removed_from_uc
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def request_synthetic_data_generation(
@@ -409,6 +420,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
