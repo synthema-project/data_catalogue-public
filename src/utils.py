@@ -368,6 +368,43 @@ def delete_all_datasets_and_usecases(session: Session):
     """
     delete_all_use_cases_and_datasets(session)
 
+def remove_dataset_from_use_case(session: Session, dataset_path: str) -> bool:
+    """
+    Removes a dataset path from ALL use-cases without deleting the entire
+    use-case unless it becomes completely empty.
+    """
+
+    # Find all use-cases that contain this dataset
+    statement = select(UseCase)
+    use_cases = session.exec(statement).all()
+
+    found = False
+
+    for uc in use_cases:
+        updated = False
+
+        for node, paths in uc.datasets.items():
+            if dataset_path in paths:
+                found = True
+                updated = True
+                uc.datasets[node] = [p for p in paths if p != dataset_path]
+
+        # Clean up empty node entries
+        uc.datasets = {node: paths for node, paths in uc.datasets.items() if len(paths) > 0}
+
+        # If everything is empty, delete the use-case entirely
+        if updated:
+            if len(uc.datasets) == 0:
+                session.delete(uc)
+            else:
+                session.add(uc)
+
+    if not found:
+        return False
+
+    session.commit()
+    return True
+
 
 async def fetch_all_datasets(session: Session):
     try:
@@ -541,6 +578,7 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 
 
