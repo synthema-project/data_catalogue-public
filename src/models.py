@@ -133,7 +133,7 @@ class UseCase(SQLModel, table=True):
     # dictionary mapping node → list of URLs
     datasets: Dict[str, List[str]] = Field(
         default_factory=dict,
-        sa_column=Column(JSONB, nullable=False)
+        sa_column=Column(JSONType, nullable=False)#Column(JSONB, nullable=False)
     )
 
     #nodes: list[str] = Field(
@@ -197,6 +197,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
