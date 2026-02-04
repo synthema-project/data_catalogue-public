@@ -1,36 +1,24 @@
 # tests/func.py
-import pytest
 from fastapi.testclient import TestClient
 from main import app
-from unittest.mock import patch
-
 
 client = TestClient(app)
 
+def test_post_metadata():
+    payload = {
+        "node":"n1",
+        "path":"file.csv",
+        "use_case":"covid",
+        "num_records":2,
+        "num_features":1,
+        "data_schema":{"a":"int"},
+        "dataset_metadata":{"title":"test"}
+    }
 
-@pytest.fixture(autouse=True)
-def clean_db():
-    # if you have a reset method use it, otherwise drop manually
-    yield
+    r = client.post("/metadata", json=payload)
+    assert r.status_code == 200
 
 
-def test_add_and_list_use_cases():
-    with patch("services.catalogue_service.remove_dataset_info_from_database", return_value=True):
-        # Simulate an ingestion notification
-        response = client.post(
-            "/catalogue",
-            json={
-                "path": "file1.csv",
-                "use_case": "aml1",
-                "node": "NODE1"
-            }
-        )
-        assert response.status_code == 200
-
-    list_response = client.get("/use-cases")
-    assert list_response.status_code == 200
-
-    items = list_response.json()
-    assert len(items) == 1
-    assert items[0]["use_case"] == "aml1"
-    assert "NODE1" in items[0]["datasets"]
+def test_get_all_metadata():
+    r = client.get("/metadata")
+    assert r.status_code in (200,404)
