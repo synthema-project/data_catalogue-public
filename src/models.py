@@ -81,7 +81,7 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     num_features: Optional[int] = None
     
     data_schema: Optional[Dict[str, Any]] = Field(
-        sa_column=Column(JSONB)
+        sa_column=Column(JSONType)#(JSONB)
     )
 
     dataset_metadata: Optional[DatasetMetadata] = Field(
@@ -197,6 +197,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
