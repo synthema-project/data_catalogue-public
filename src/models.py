@@ -10,6 +10,59 @@ from typing import Dict, Any
 from pydantic import field_serializer
 from sqlalchemy import Column, String
 
+class Publisher(BaseModel):
+    name: Optional[str]
+    url: Optional[str]
+    mail: Optional[str]
+    type: Optional[str]
+    note: Optional[str]
+
+class Temporal(BaseModel):
+    startDate: Optional[str]
+    endDate: Optional[str]
+
+class TechnicalMetadata(BaseModel):
+    datasetIdentifier: Optional[str]
+    metadataUpdateDate: Optional[str]
+
+class Distribution(BaseModel):
+    title: Optional[str]
+    accessURL: Optional[str]
+    description: Optional[str]
+    downloadURL: Optional[str]
+    mediaType: Optional[str]
+    format: Optional[str]
+    byteSize: Optional[str]
+    rights: Optional[str]
+    license: Optional[str]
+    documentation: Optional[str]
+
+class DatasetMetadata(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    publisher: Optional[Publisher] = None
+    contactPoint: Optional[str] = None
+    theme: Optional[str] = None
+    keyword: Optional[str] = None
+    accessRights: Optional[str] = None
+    license: Optional[str] = None
+    conformsTo: Optional[str] = None
+    language: Optional[str] = None
+    spatial: Optional[str] = None
+    temporal: Optional[Temporal] = None
+    issued: Optional[str] = None
+    modified: Optional[str] = None
+    provenance: Optional[str] = None
+    purpose: Optional[str] = None
+    populationCoverage: Optional[str] = None
+    updateFrequency: Optional[str] = None
+    applicableLegislation: Optional[str] = None
+    numberOfRecords: Optional[str] = None
+    numberOfIndividuals: Optional[str] = None
+    technicalMetadata: Optional[TechnicalMetadata] = None
+    distribution: Optional[Distribution] = None
+
+
 class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     #id: str = Field(default=None, primary_key=True)
     #id: Optional[int] = Field(default=None, primary_key=True)
@@ -144,6 +197,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
