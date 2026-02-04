@@ -1,5 +1,16 @@
 from models import NodeDatasetInfo
 
+import pytest
+from sqlmodel import SQLModel, Session, create_engine
+
+@pytest.fixture
+def session():
+    engine = create_engine("sqlite://", echo=False)
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        yield session
+
 def test_node_dataset_creation():
     ds = NodeDatasetInfo(
         node="node1",
