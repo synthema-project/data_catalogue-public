@@ -11,31 +11,31 @@ from pydantic import field_serializer
 from sqlalchemy import Column, String
 
 class Publisher(BaseModel):
-    name: Optional[str]
-    url: Optional[str]
-    mail: Optional[str]
-    type: Optional[str]
-    note: Optional[str]
+    name: Optional[str] = None
+    url: Optional[str] = None
+    mail: Optional[str] = None
+    type: Optional[str] = None
+    note: Optional[str] = None
 
 class Temporal(BaseModel):
-    startDate: Optional[str]
-    endDate: Optional[str]
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
 
 class TechnicalMetadata(BaseModel):
-    datasetIdentifier: Optional[str]
-    metadataUpdateDate: Optional[str]
+    datasetIdentifier: Optional[str] = None
+    metadataUpdateDate: Optional[str] = None
 
 class Distribution(BaseModel):
-    title: Optional[str]
-    accessURL: Optional[str]
-    description: Optional[str]
-    downloadURL: Optional[str]
-    mediaType: Optional[str]
-    format: Optional[str]
-    byteSize: Optional[str]
-    rights: Optional[str]
-    license: Optional[str]
-    documentation: Optional[str]
+    title: Optional[str] = None
+    accessURL: Optional[str] = None
+    description: Optional[str] = None
+    downloadURL: Optional[str] = None
+    mediaType: Optional[str] = None
+    format: Optional[str] = None
+    byteSize: Optional[str] = None
+    rights: Optional[str] = None
+    license: Optional[str] = None
+    documentation: Optional[str] = None
 
 class DatasetMetadata(BaseModel):
     title: Optional[str] = None
@@ -197,6 +197,7 @@ class SyntheticDatasetGenerationRequestStatusTable(
             filters=[f.model_dump() for f in (req.filters or [])],
 
         )
+
 
 
 
