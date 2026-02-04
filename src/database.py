@@ -67,10 +67,20 @@ def add_new_metadata_columns():
                     IF NOT EXISTS (
                         SELECT 1 FROM information_schema.columns
                         WHERE table_name = 'nodedatasetinfo'
-                        AND column_name = 'schema'
+                        AND column_name = 'data_schema'
                     ) THEN
                         ALTER TABLE nodedatasetinfo
-                        ADD COLUMN schema JSONB;
+                        ADD COLUMN data_schema JSONB;
+                    END IF;
+
+                    -- Add dataset_metadata column
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'nodedatasetinfo'
+                        AND column_name = 'dataset_metadata'
+                    ) THEN
+                        ALTER TABLE nodedatasetinfo
+                        ADD COLUMN dataset_metadata JSON;
                     END IF;
                 END $$;
             """))
@@ -176,9 +186,63 @@ def migrate_usecase_datasets_to_jsonb():
             print("Migration failed:", e)
             raise
 
+def migrate_schema_and_metadata_columns():
+    """
+    Renames legacy columns:
+      schema   -> data_schema
+      metadata -> dataset_metadata
+    """
+    with engine.connect() as connection:
+        try:
+            connection.execute(text("""
+                DO $$
+                BEGIN
+                    -- Rename schema -> data_schema
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='nodedatasetinfo'
+                        AND column_name='schema'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='nodedatasetinfo'
+                        AND column_name='data_schema'
+                    )
+                    THEN
+                        ALTER TABLE nodedatasetinfo
+                        RENAME COLUMN schema TO data_schema;
+                    END IF;
+
+                    -- Rename metadata -> dataset_metadata
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='nodedatasetinfo'
+                        AND column_name='metadata'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name='nodedatasetinfo'
+                        AND column_name='dataset_metadata'
+                    )
+                    THEN
+                        ALTER TABLE nodedatasetinfo
+                        RENAME COLUMN metadata TO dataset_metadata;
+                    END IF;
+                END $$;
+            """))
+
+            connection.commit()
+            print("Schema & metadata column migration completed!")
+
+        except Exception as e:
+            connection.rollback()
+            print("Migration failed:", e)
+            raise
+
 
 def get_session():
     return Session(engine)
+
 
 
 
