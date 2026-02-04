@@ -8,7 +8,7 @@ from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatas
 from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
 from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets, remove_single_dataset_from_use_case
-from database import create_db_and_tables, get_session, add_datasets_column_to_usecases, add_new_metadata_columns, migrate_usecase_datasets_to_jsonb #add_use_case_column, 
+from database import create_db_and_tables, get_session, add_datasets_column_to_usecases, add_new_metadata_columns, migrate_usecase_datasets_to_jsonb, migrate_schema_and_metadata_columns #add_use_case_column, 
 from auth import UserClaims, require_authentication
 import uvicorn
 import logging
@@ -35,6 +35,7 @@ def on_startup():
     #add_use_case_column()
     add_datasets_column_to_usecases()
     migrate_usecase_datasets_to_jsonb()
+    migrate_schema_and_metadata_columns()
     create_db_and_tables()
 
 #@app.post("/metadata", tags=["data-catalogue"])
@@ -412,6 +413,7 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
 
 
 
