@@ -15,7 +15,7 @@ def test_node_dataset_creation():
     assert ds.dataset_metadata["title"] == "t"
 
 from models import UseCase
-from crud import update_use_case
+from utils import update_use_case
 
 def test_update_usecase_creates(session):
     update_use_case(session, "covid", "node1", "file.csv")
@@ -24,7 +24,7 @@ def test_update_usecase_creates(session):
     assert "node1" in uc.datasets
 
 from models import NodeDatasetInfo
-from crud import save_dataset_info_to_database
+from utils import save_dataset_info_to_database
 
 def test_save_metadata(session):
     ds = NodeDatasetInfo(
