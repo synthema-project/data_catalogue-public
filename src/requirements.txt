@@ -7,3 +7,7 @@ pytest
 jsonschema
 sqlalchemy
 sqlmodel
+fastapi-keycloak
+starlette
+python-keycloak
+jwcrypto
