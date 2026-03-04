@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus
+from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus, UpdateSdgTaskBody
 from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
 from database import create_db_and_tables, get_session
@@ -156,11 +156,10 @@ async def request_synthetic_data_generation(
 
 
 @app.put("/synthetic_data/generation_request", tags=["data-catalogue"])
-async def update_synthetic_data_generation_request(task_id: str,
-                                                   status: Literal["pending", "running", "cancelled", "success", "failed"],
-                                                   synthetic_data_uri: Optional[str] = None,
-                                                   session: Session = Depends(get_session),
-                                                   ) -> Dict:
+async def update_synthetic_data_generation_request(
+    payload: UpdateSdgTaskBody = Body(...),
+    session: Session = Depends(get_session),
+) -> Dict:
     """
     Calls the function that updates the  status of a previously
     registered task.
@@ -174,14 +173,19 @@ async def update_synthetic_data_generation_request(task_id: str,
     """
 
     try:
-        await update_sdg_task_status(task_id, status, synthetic_data_uri, session)
+        await update_sdg_task_status(
+            payload.task_id,
+            payload.status,
+            payload.synthetic_data_uri,
+            session
+        )
     except HTTPException as e:
         logger.error(f"HTTPException: {e.detail}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-    return {"message": f"Task {task_id} - Status {status}"}
+    return {"message": f"Task {payload.task_id} - Status {payload.status}"}
 
 @app.get("/synthetic_data/generation_request", tags=['data-catalogue'])
 async def get_synthetic_data_generation_request(task_id: str,

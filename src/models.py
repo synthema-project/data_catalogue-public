@@ -5,7 +5,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import Column, JSON as JSONType
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 
 class NodeDatasetInfo(SQLModel, table=True):
     #id: str = Field(default=None, primary_key=True)
@@ -39,6 +39,12 @@ class SyntheticDatasetGenerationRequestStatus(BaseModel):
     n_sample: int
     disease: str
     filters: List[FilterInput] = Field(default_factory=list)
+
+
+class UpdateSdgTaskBody(BaseModel):
+    task_id: str
+    status: Literal["pending", "running", "cancelled", "success", "failed"]
+    synthetic_data_uri: Optional[str] = None
 
 class SyntheticDatasetGenerationRequestStatusTable(
     SQLModel,
