@@ -1,23 +1,41 @@
 from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from models import NodeDatasetInfo, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus, UpdateSdgTaskBody
-from utils import save_dataset_info_to_database, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
+from sqlalchemy import delete
+from models import NodeDatasetInfo, UseCase, RemoveDatasetObject, SyntheticDatasetGenerationRequestStatus, DatasetMetadata, UpdateSdgTaskBody
+from utils import save_dataset_info_to_database, update_use_case, get_dataset_info_from_database, remove_dataset_info_from_database, fetch_all_datasets, remove_all_datasets_from_database
 from utils import register_new_sdg_task, update_sdg_task_status, get_sdg_task_status, get_sdg_task_uri, get_user_requests_list
-from database import create_db_and_tables, get_session
+from utils import get_all_use_cases, get_single_use_case, delete_all_use_cases, delete_all_use_cases_and_datasets, remove_single_dataset_from_use_case
+from database import create_db_and_tables, get_session, add_datasets_column_to_usecases, add_new_metadata_columns, migrate_usecase_datasets_to_jsonb, migrate_schema_and_metadata_columns #add_use_case_column, 
+from auth import UserClaims, require_authentication
 import uvicorn
 import logging
 from typing import Dict, Literal, Optional
+from sqlmodel import select
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-
+'''
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+'''
 @app.on_event("startup")
 def on_startup():
+    add_new_metadata_columns()
+    #add_use_case_column()
+    add_datasets_column_to_usecases()
+    migrate_usecase_datasets_to_jsonb()
+    migrate_schema_and_metadata_columns()
     create_db_and_tables()
 
 #@app.post("/metadata", tags=["data-catalogue"])
@@ -29,21 +47,123 @@ def on_startup():
 #        raise e
 
 @app.post("/metadata", tags=["data-catalogue"])
-async def save_dataset_info_to_database_endpoint(node_dataset: NodeDatasetInfo, session: Session = Depends(get_session)):
+async def save_dataset_info_to_database_endpoint(
+    node_dataset: NodeDatasetInfo, 
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
 #async def save_dataset_info_to_database_endpoint(node : str, disease : str, path : str, session: Session = Depends(get_session)):
     try:
-        logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        #logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        logger.info(f"Saving metadata for node={node_dataset.node}, use_case={node_dataset.use_case}")
+        
+        # Save per-dataset metadata
         save_dataset_info_to_database(session, node_dataset)
+        
+        # Update the use-case aggregated structure
+        #update_use_case(session, node_dataset.use_case, node_dataset.node)
+        update_use_case(session, use_case=node_dataset.use_case, node=node_dataset.node, path=node_dataset.path)
+
         return {"message": 'Metadata uploaded successfully'}
+    
     except HTTPException as e:
         logger.error(f"HTTPException occurred: {str(e)}")
         raise e
     except Exception as e:
         logger.exception("Unexpected error while saving dataset info to the database")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+'''
+@app.get("/usecases", tags=["data-catalogue"])
+async def get_use_cases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    statement = select(UseCase)
+    ucs = session.exec(statement).all()
 
+    return {"use_cases": [uc.model_dump() for uc in ucs]}
+
+@app.get("/usecases/{use_case}")
+def get_use_case(
+    use_case: str, 
+    db: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    record = db.query(UseCase).filter_by(use_case=use_case).first()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Use case not found")
+
+    return {
+        "use_case": record.use_case,
+        "datasets": record.datasets
+    }
+'''
+'''
+@app.get("/usecases", tags=["data-catalogue"])
+async def get_use_cases(
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
+    use_cases = get_all_use_cases(session)
+    return {"use_cases": [uc.model_dump() for uc in use_cases]}
+'''
+@app.get("/usecases", tags=["data-catalogue"])
+async def get_use_cases(
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
+    statement = select(UseCase)
+    ucs = session.exec(statement).all()
+
+    return {
+        "use_cases": [
+            {
+                "use_case": uc.use_case,
+                "datasets": uc.datasets   # ← IMPORTANT
+            }
+            for uc in ucs
+        ]
+    }
+
+
+@app.get("/usecases/{use_case}", tags=["data-catalogue"])
+async def get_use_case(
+    use_case: str,
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
+    record = get_single_use_case(session, use_case)
+
+    return {
+        "use_case": record.use_case,
+        "datasets": record.datasets
+    }
+
+
+@app.delete("/usecases/all", tags=["data-catalogue"])
+async def delete_all_usecases(
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
+    delete_all_use_cases(session)
+    return {"detail": "All use-cases have been deleted"}
+'''
+@app.delete("/usecases/all", tags=["data-catalogue"])
+def delete_all_usecases(
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
+    delete_all_use_cases_and_datasets(session)
+    return {"detail": "All use-cases AND dataset metadata have been deleted"}
+'''
 @app.get("/metadata/{disease}", tags=["data-catalogue"])
-async def retrieve_dataset_info(node: str, disease: str, session: Session = Depends(get_session)):
+async def retrieve_dataset_info(
+    node: str, 
+    disease: str, 
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
     try:
         dataset_info = get_dataset_info_from_database(session, node, disease)
         return dataset_info.dict()
@@ -51,12 +171,24 @@ async def retrieve_dataset_info(node: str, disease: str, session: Session = Depe
         raise e
 
 @app.get("/metadata", tags=["data-catalogue"])
-async def get_all_datasets(session: Session = Depends(get_session)):
+async def get_all_datasets(
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
     datasets = await fetch_all_datasets(session)
     if not datasets:
         raise HTTPException(status_code=404, detail="No datasets found")
     return {"datasets": datasets}
-
+'''
+@app.delete("/usecases/all")
+def delete_all_usecases(
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication)
+):
+    session.exec(delete(UseCase))
+    session.commit()
+    return {"All use-cases have been deleted"}
+'''
 #@app.delete("/metadata", tags=["data-catalogue"])
 #async def delete_dataset(
 #    #removedatasetobject: RemoveDatasetObject, 
@@ -84,32 +216,51 @@ async def get_all_datasets(session: Session = Depends(get_session)):
 #        logging.error(f"An error occurred: {e}")
 #        raise HTTPException(status_code=500, detail=str(e))
 
+#@app.delete("/metadata", tags=["data-catalogue"])
+#async def delete_dataset(
+#    node: str,
+#    disease: str,
+#    path: str,
+#    session: Session = Depends(get_session)
+#):
+#    try:
+#        # Log the incoming DELETE request
+#        logging.info(f"DELETE request received with node={node}, disease={disease}, path={path}")
+#        
+#        # Call the remove function
+#        result = remove_dataset_info_from_database(session, node=node, disease=disease, path=path)
+
+#        if result:
+#            logging.info(f"Metadata for path={path} removed successfully.")
+#            return {"message": f"Dataset '{path}' deleted successfully."}
+
+#        logging.warning(f"Metadata for path={path} not found in the database.")
+#        raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
+#    except Exception as e:
+#        logging.error(f"Error processing DELETE request: {e}")
+#        raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/metadata", tags=["data-catalogue"])
 async def delete_dataset(
-    node: str,
-    disease: str,
     path: str,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
 ):
     try:
-        # Log the incoming DELETE request
-        logging.info(f"DELETE request received with node={node}, disease={disease}, path={path}")
-        
-        # Call the remove function
-        result = remove_dataset_info_from_database(session, node=node, disease=disease, path=path)
-
+        result = remove_dataset_info_from_database(session, path=path)
         if result:
-            logging.info(f"Metadata for path={path} removed successfully.")
             return {"message": f"Dataset '{path}' deleted successfully."}
 
-        logging.warning(f"Metadata for path={path} not found in the database.")
         raise HTTPException(status_code=404, detail=f"Dataset '{path}' not found.")
+
     except Exception as e:
-        logging.error(f"Error processing DELETE request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/metadata/all", tags=["data-catalogue"])
-async def delete_all_datasets(session: Session = Depends(get_session)):
+async def delete_all_datasets(
+    session: Session = Depends(get_session),
+    ##current_user: UserClaims = Depends(require_authentication)
+):
     try:
         remove_all_datasets_from_database(session)
         return {"message": "All datasets deleted successfully."}
@@ -119,6 +270,21 @@ async def delete_all_datasets(session: Session = Depends(get_session)):
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# If you use app (not a router), add it to the same file:
+@app.delete("/usecases/dataset", tags=["data-catalogue"])
+def delete_dataset_from_use_case(
+    dataset_path: str,
+    session: Session = Depends(get_session),
+    #current_user: UserClaims = Depends(require_authentication)
+):
+    removed = remove_single_dataset_from_use_case(session, dataset_path)
+
+    if not removed:
+        raise HTTPException(status_code=404, detail="Dataset not found in any use-case")
+
+    return {"detail": "Dataset removed from use-case(s)"}
+
 
 @app.post("/synthetic_data/generation_request", tags=["data-catalogue"])
 async def request_synthetic_data_generation(
@@ -251,3 +417,63 @@ async def healthcheck():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=83)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

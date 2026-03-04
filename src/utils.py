@@ -1,8 +1,9 @@
 from sqlmodel import Session, select
+from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from models import NodeDatasetInfo, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
+from models import NodeDatasetInfo, UseCase, SyntheticDatasetGenerationRequestStatus, SyntheticDatasetGenerationRequestStatusTable as SDGRT
 import logging
-from typing import Tuple, Literal, Optional, List
+from typing import Tuple, Literal, Optional, List, Dict, Any
 from enum import Enum
 
 from config import Settings
@@ -18,9 +19,13 @@ logger = logging.getLogger(__name__)
 #        print("Error saving dataset info to database:", e)
 #        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInfo):
+def save_dataset_info_to_database(
+    session: Session, 
+    node_dataset: NodeDatasetInfo
+):
     try:
-        logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        #logger.info(f"Adding dataset info for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        logger.info(f"Adding dataset info for node={node_dataset.node}, use_case={node_dataset.use_case}")
         session.add(node_dataset)
         session.commit()
         logger.info(f"Dataset info saved successfully for node: {node_dataset.node}")
@@ -28,41 +33,270 @@ def save_dataset_info_to_database(session: Session, node_dataset: NodeDatasetInf
         logger.error(f"Error saving dataset info to database: {str(e)}")
         session.rollback()  # Rollback in case of error
         raise HTTPException(status_code=500, detail="Internal Server Error")
+'''
+def update_use_case(
+    session: Session,
+    use_case: str,
+    node: str,
+    path: str
+):
+    """Register that a given node contains data for a use-case."""
 
-def get_dataset_info_from_database(session: Session, node: str, disease: str):
     try:
-        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.node == node, NodeDatasetInfo.disease == disease)
+        uc = session.get(UseCase, use_case)
+        entry = {"node": node, "path": path}
+        if uc is None:
+            uc = UseCase(use_case=use_case, datasets=[entry])
+            session.add(uc)
+        else:
+            if node not in uc.nodes:
+                uc.nodes.append(entry)
+
+        session.commit()
+        logger.info(f"Use-case {use_case} updated with node {node}")
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error updating use-case: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def update_use_case(session: Session, use_case: str, node: str, path: str):
+    """
+    Add dataset (node + path) to a use-case.
+    """
+    try:
+        uc = session.get(UseCase, use_case)
+        print(node)
+        print(path)
+        dataset_entry = {"node": node, "path": path}
+        print(dataset_entry)
+        if uc is None:
+            # Create new use-case record
+            uc = UseCase(
+                use_case=use_case,
+                datasets=[dataset_entry]
+            )
+            print(uc)
+            session.add(uc)
+
+        else:
+            # Avoid duplicates
+            if dataset_entry not in uc.datasets:
+                print(uc)
+                uc.datasets.append(dataset_entry)
+
+        session.commit()
+        #session.refresh(uc)
+        logger.info(f"Use-case {use_case} updated with node {node}")
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating use-case: {e}")
+'''
+'''
+def update_use_case(session, use_case, node, path):
+    record = session.query(UseCase).filter_by(use_case=use_case).first()
+
+    new_entry = {"node": node, "path": path}
+
+    if record:
+        # append only if not duplicated
+        if new_entry not in record.datasets:
+            record.datasets = record.datasets + [new_entry]
+            #record.datasets.append(new_entry)
+            session.add(record)
+            #session.commit()
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets=[new_entry]
+        )
+        session.add(record)
+        #session.commit()
+
+    session.commit()
+'''
+def update_use_case(session, use_case, node, path):
+    record = session.query(UseCase).filter_by(use_case=use_case).first()
+    dataset_name = path.lstrip("/")
+
+    if record:
+        new_datasets = list(record.datasets)  # <- copy!
+        if dataset_name not in new_datasets:
+            new_datasets.append(dataset_name)
+
+        new_nodes = list(record.nodes)
+        if node not in new_nodes:
+            new_nodes.append(node)
+
+        # The critical part:
+        record.datasets = new_datasets
+        record.nodes = new_nodes
+
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets=[dataset_name],
+            nodes=[node]
+        )
+        session.add(record)
+
+    session.commit()
+
+def update_use_case(session, use_case, node, path):
+    record = session.query(UseCase).filter_by(use_case=use_case).first()
+
+    dataset_name = path.lstrip("/")
+
+    if record:
+        new_datasets = list(record.datasets)
+        if dataset_name not in new_datasets:
+            new_datasets.append(dataset_name)
+
+        record.datasets = new_datasets
+
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets=[dataset_name]
+        )
+        session.add(record)
+
+    session.commit()
+
+
+def update_use_case(session, use_case: str, node: str, path: str):
+    record = session.get(UseCase, use_case)
+
+    # Construct URL from MINIO endpoint
+    minio_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+
+    if record:
+        data = dict(record.datasets)  # force deepcopy
+        node_list = data.get(node, [])
+
+        if minio_url not in node_list:
+            node_list.append(minio_url)
+
+        data[node] = node_list
+        record.datasets = data
+
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets={node: [minio_url]}
+        )
+        session.add(record)
+
+    session.commit()
+
+def update_use_case(session, use_case: str, node: str, path: str):
+    record = session.get(UseCase, use_case)
+
+    # Construct URL from MINIO endpoint
+    minio_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+
+    if record:
+        # ensure full copy so SQLAlchemy detects mutation
+        data = dict(record.datasets or {})
+
+        # always append blindly
+        node_list = list(data.get(node, []))
+        node_list.append(minio_url)
+
+        data[node] = node_list
+        record.datasets = data  # reassign to trigger update
+
+    else:
+        record = UseCase(
+            use_case=use_case,
+            datasets={node: [minio_url]}
+        )
+        session.add(record)
+
+    session.commit()
+
+
+#def get_dataset_info_from_database(
+#    session: Session,
+#    node: str, disease: str):
+#    try:
+#        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.node == node, NodeDatasetInfo.disease == disease)
+#        dataset_info = session.exec(statement).first()
+#        if dataset_info is None:
+#            raise HTTPException(status_code=404, detail=f"No dataset found in the database for node: {node} and disease: {disease}")
+#        return dataset_info
+#    except Exception as e:
+#        print("Error retrieving dataset info from database:", e)
+#        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def get_dataset_info_from_database(session: Session, path: str):
+    try:
+        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
         if dataset_info is None:
-            raise HTTPException(status_code=404, detail=f"No dataset found in the database for node: {node} and disease: {disease}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"No dataset found with path: {path}"
+            )
         return dataset_info
-    except Exception as e:
-        print("Error retrieving dataset info from database:", e)
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def remove_dataset_info_from_database(session: Session, node: str, disease: str, path: str) -> bool:
+#def remove_dataset_info_from_database(session: Session, node: str, disease: str, path: str) -> bool:
+#    try:
+#        # Fetch the dataset info
+#        statement = select(NodeDatasetInfo).where(
+#            NodeDatasetInfo.node == node,
+#            NodeDatasetInfo.disease == disease,
+#            NodeDatasetInfo.path == path #f"{node}/{filename}" ##path
+#        )
+#        logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
+#        dataset_info = session.exec(statement).first()
+#        # Log the dataset info for debugging
+#        print("Dataset info found for deletion:", dataset_info)
+#        if dataset_info:
+#            # Perform deletion
+#            session.delete(dataset_info)
+#            session.commit()
+#            print("Dataset metadata successfully removed.")
+#            return True
+#        print("Dataset metadata not found in the database.")
+#        return False
+#    except Exception as e:
+#        print("Error removing dataset metadata:", e)
+#        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+def remove_dataset_info_from_database(session: Session, path: str) -> bool:
     try:
-        # Fetch the dataset info
-        statement = select(NodeDatasetInfo).where(
-            NodeDatasetInfo.node == node,
-            NodeDatasetInfo.disease == disease,
-            NodeDatasetInfo.path == path #f"{node}/{filename}" ##path
-        )
-        logging.info(f"Trying to delete metadata: node={node}, disease={disease}, path={path}")
+        # Fetch dataset
+        statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
-        # Log the dataset info for debugging
-        print("Dataset info found for deletion:", dataset_info)
-        if dataset_info:
-            # Perform deletion
-            session.delete(dataset_info)
-            session.commit()
-            print("Dataset metadata successfully removed.")
-            return True
-        print("Dataset metadata not found in the database.")
-        return False
-    except Exception as e:
-        print("Error removing dataset metadata:", e)
+        path_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+        if not dataset_info:
+            return False
+
+        use_case = dataset_info.use_case
+        node = dataset_info.node
+
+        # delete dataset entry
+        session.delete(dataset_info)
+
+       # update use-case table
+        uc = session.get(UseCase, use_case)
+        if uc:
+            uc.datasets = [d for d in uc.datasets if d != path_url]
+
+            if len(uc.datasets) == 0:
+                session.delete(uc)
+
+        session.commit()
+        return True
+
+    except Exception:
+        session.rollback()
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 def remove_all_datasets_from_database(session: Session):
     try:
@@ -74,6 +308,114 @@ def remove_all_datasets_from_database(session: Session):
     except Exception as e:
         print("Error removing all datasets from database:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+def get_all_use_cases(session: Session):
+    """Return all use-case records."""
+    statement = select(UseCase)
+    return session.exec(statement).all()
+
+
+def get_single_use_case(session: Session, use_case: str):
+    """Return a single use case or raise 404."""
+    statement = select(UseCase).where(UseCase.use_case == use_case)
+    result = session.exec(statement).first()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Use case not found")
+
+    return result
+
+
+def delete_all_use_cases(session: Session):
+    """Delete all use-case records."""
+    session.exec(
+        UseCase.__table__.delete()   # SQLModel-correct bulk delete
+    )
+    session.commit()
+    return True
+
+def delete_all_use_cases_and_datasets(session: Session):
+    """
+    Deletes all use-cases AND all dataset metadata in a single transaction.
+    """
+
+    try:
+        statement = select(NodeDatasetInfo)
+        datasets = session.exec(statement).all()
+        for dataset in datasets:
+            session.delete(dataset)
+        session.commit()
+
+        # Delete use cases
+        """Delete all use-case records."""
+        session.exec(
+        UseCase.__table__.delete()   # SQLModel-correct bulk delete
+        )
+        session.commit()
+        return True
+
+    except Exception as e:
+        session.rollback()
+        print("Error deleting all use-cases and datasets:", e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+def delete_all_datasets_and_usecases(session: Session):
+    """
+    Same as above, but callable from datasets endpoint.
+    Keeps logic consistent.
+    """
+    delete_all_use_cases_and_datasets(session)
+
+
+def remove_single_dataset_from_use_case(session: Session, dataset_path: str) -> bool:
+    """
+    Remove a single dataset file (minio URL) from all use-cases.
+
+    Example:
+    input:  'minio/data1.csv'
+    result:
+        datasets = {
+            "NODE1": ["minio/data2.csv"]
+        }
+    """
+    try:
+        # Fetch ALL use-cases
+        statement = select(UseCase)
+        use_cases = session.exec(statement).all()
+
+        changed = False
+
+        for uc in use_cases:
+            new_datasets = {}
+
+            for node, paths in uc.datasets.items():
+                # Filter the list
+                filtered = [p for p in paths if p != dataset_path]
+
+                if filtered:
+                    new_datasets[node] = filtered
+                # If empty list → remove node completely
+
+            # If the dataset was removed
+            if new_datasets != uc.datasets:
+                changed = True
+                uc.datasets = new_datasets
+
+            # If after removal the use-case is empty → delete use-case
+            if not uc.datasets:
+                session.delete(uc)
+
+        if changed:
+            session.commit()
+
+        return changed
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 async def fetch_all_datasets(session: Session):
     try:
@@ -245,4 +587,61 @@ async def get_user_requests_list(username: str, session: Session) -> List[dict]:
         # Return results
         return user_requests
     except Exception as e:
+
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

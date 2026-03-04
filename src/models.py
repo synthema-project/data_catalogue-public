@@ -1,24 +1,151 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, JSON
 from pydantic import BaseModel
 import uuid as uuid_pkg
 from enum import Enum
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import Column, JSON as JSONType
+from sqlalchemy import Column, String, JSON as JSONType
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from typing import Dict, Any, Literal
+from pydantic import field_serializer
+from sqlalchemy import Column, String
 
-class NodeDatasetInfo(SQLModel, table=True):
+class Publisher(BaseModel):
+    name: Optional[str] = None
+    url: Optional[str] = None
+    mail: Optional[str] = None
+    type: Optional[str] = None
+    note: Optional[str] = None
+
+class Temporal(BaseModel):
+    startDate: Optional[str] = None
+    endDate: Optional[str] = None
+
+class TechnicalMetadata(BaseModel):
+    datasetIdentifier: Optional[str] = None
+    metadataUpdateDate: Optional[str] = None
+
+class Distribution(BaseModel):
+    title: Optional[str] = None
+    accessURL: Optional[str] = None
+    description: Optional[str] = None
+    downloadURL: Optional[str] = None
+    mediaType: Optional[str] = None
+    format: Optional[str] = None
+    byteSize: Optional[str] = None
+    rights: Optional[str] = None
+    license: Optional[str] = None
+    documentation: Optional[str] = None
+
+class DatasetMetadata(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    publisher: Optional[Publisher] = None
+    contactPoint: Optional[str] = None
+    theme: Optional[str] = None
+    keyword: Optional[str] = None
+    accessRights: Optional[str] = None
+    license: Optional[str] = None
+    conformsTo: Optional[str] = None
+    language: Optional[str] = None
+    spatial: Optional[str] = None
+    temporal: Optional[Temporal] = None
+    issued: Optional[str] = None
+    modified: Optional[str] = None
+    provenance: Optional[str] = None
+    purpose: Optional[str] = None
+    populationCoverage: Optional[str] = None
+    updateFrequency: Optional[str] = None
+    applicableLegislation: Optional[str] = None
+    numberOfRecords: Optional[str] = None
+    numberOfIndividuals: Optional[str] = None
+    technicalMetadata: Optional[TechnicalMetadata] = None
+    distribution: Optional[Distribution] = None
+
+
+class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     #id: str = Field(default=None, primary_key=True)
     #id: Optional[int] = Field(default=None, primary_key=True)
     id: Optional[uuid_pkg.UUID] = Field(default_factory=uuid_pkg.uuid4,
                                              primary_key=True)
     node: str
     path: str
-    disease: str
+    use_case: str # to change into use_case
+
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    @field_serializer("timestamp")
+    def serialize_ts(self, ts: datetime):
+        return ts.isoformat()
+        
+    num_records: Optional[int] = None
+    num_features: Optional[int] = None
+    
+    #data_schema: Optional[Dict[str, Any]] = Field(
+    #    sa_column=Column(JSONType)#(JSONB)
+    #)
+
+    dataset_metadata: Optional[DatasetMetadata] = Field(
+        sa_column=Column(JSONType)
+    )
+
+#class UseCase(SQLModel, table=True):
+#    __tablename__ = "usecases"
+#
+#    use_case: str = Field(primary_key=True)
+#    nodes: List[str] = Field(default_factory=list, sa_column=Column(ARRAY(String)))
+
+#class UseCase(SQLModel, table=True):
+#    __tablename__ = "usecases"
+#    use_case: str = Field(primary_key=True)
+#    datasets: list = Field(sa_column=Column(JSONB))
+
+#class UseCase(SQLModel, table=True):
+#    use_case: str = Field(primary_key=True)
+#    datasets: list[dict] = Field(
+#        default_factory=list,
+#        sa_column=Column(JSON)
+#    )
+
+'''
+class UseCase(SQLModel, table=True):
+    __tablename__ = "usecases"
+
+    use_case: str = Field(primary_key=True)
+
+    # Python-side default is created by Pydantic (avoid mutable default pitfall)
+    # sa_column instructs SQLAlchemy to create an ARRAY of JSONB on Postgres
+    datasets: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        sa_column=Column(ARRAY(JSONB), nullable=False)
+    )
+'''
+
+class UseCase(SQLModel, table=True):
+    __tablename__ = "usecases"
+
+    use_case: str = Field(primary_key=True)
+
+    #datasets: List[str] = Field(
+    #    default_factory=list,
+    #    sa_column=Column(ARRAY(String), nullable=False)
+    #)
+
+    # dictionary mapping node → list of URLs
+    datasets: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        sa_column=Column(JSONType, nullable=False)#Column(JSONB, nullable=False)
+    )
+
+    #nodes: list[str] = Field(
+    #    default_factory=list,
+    #    sa_column=Column(ARRAY(String), nullable=False)
+    #)
+
+
 
 class RemoveDatasetObject(BaseModel):
     node: str
-    disease: str
+    use_case: str # to change into use_case
     path: str
 
 class TaskStatus(str, Enum):
@@ -74,4 +201,37 @@ class SyntheticDatasetGenerationRequestStatusTable(
             disease=req.disease,
             # Convertimos objetos FilterInput -> dicts JSON
             filters=[f.model_dump() for f in (req.filters or [])],
+
         )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
