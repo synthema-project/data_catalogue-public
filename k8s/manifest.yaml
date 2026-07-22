@@ -29,17 +29,17 @@ spec:
           - name: POSTGRES_DB
             valueFrom:
               secretKeyRef:
-                name: postgres-secret
+                name: data-catalogue-postgres-secret
                 key: POSTGRES_DB
           - name: POSTGRES_USER
             valueFrom:
               secretKeyRef:
-                name: postgres-secret
+                name: data-catalogue-postgres-secret
                 key: POSTGRES_USER
           - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: postgres-secret
+                name: data-catalogue-postgres-secret
                 key: POSTGRES_PASSWORD
           - name: POSTGRES_HOST
             valueFrom:
@@ -51,6 +51,67 @@ spec:
               configMapKeyRef:
                 name: postgres-config
                 key: POSTGRES_PORT
+          - name: MINIO_PUBLIC_URL
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: MINIO_PUBLIC_URL
+          - name: KEYCLOAK_SERVER_URL
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: KEYCLOAK_SERVER_URL
+          - name: KEYCLOAK_CLIENT_ID
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: KEYCLOAK_CLIENT_ID
+          - name: KEYCLOAK_REALM_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: KEYCLOAK_REALM_NAME
+          - name: AUTH_DISABLE_TESTS
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: AUTH_DISABLE_TESTS
+          - name: APP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: APP_PORT
+          - name: KEYCLOAK_PUBLIC_KEY
+            valueFrom:
+              secretKeyRef:
+                name: data-catalogue-postgres-secret
+                key: KEYCLOAK_PUBLIC_KEY
+                optional: true
+          - name: MINIO_ENDPOINT
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: MINIO_ENDPOINT
+          - name: MINIO_BUCKET
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: MINIO_BUCKET
+          - name: MINIO_SECURE
+            valueFrom:
+              configMapKeyRef:
+                name: postgres-config
+                key: MINIO_SECURE
+          - name: MINIO_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: data-catalogue-postgres-secret
+                key: MINIO_ACCESS_KEY
+          - name: MINIO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: data-catalogue-postgres-secret
+                key: MINIO_SECRET_KEY
           command: ["python", "main.py"]
           resources:
             limits:

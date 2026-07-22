@@ -11,3 +11,4 @@ fastapi-keycloak
 starlette
 python-keycloak
 jwcrypto
+minio

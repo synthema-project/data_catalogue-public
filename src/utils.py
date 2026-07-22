@@ -6,7 +6,7 @@ import logging
 from typing import Tuple, Literal, Optional, List, Dict, Any
 from enum import Enum
 
-from config import Settings
+from config import Settings, settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -169,7 +169,7 @@ def update_use_case(session, use_case: str, node: str, path: str):
     record = session.get(UseCase, use_case)
 
     # Construct URL from MINIO endpoint
-    minio_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+    minio_url = f"{settings.MINIO_PUBLIC_URL}/{path}"
 
     if record:
         data = dict(record.datasets)  # force deepcopy
@@ -194,7 +194,7 @@ def update_use_case(session, use_case: str, node: str, path: str):
     record = session.get(UseCase, use_case)
 
     # Construct URL from MINIO endpoint
-    minio_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+    minio_url = f"{settings.MINIO_PUBLIC_URL}/{path}"
 
     if record:
         # ensure full copy so SQLAlchemy detects mutation
@@ -272,7 +272,7 @@ def remove_dataset_info_from_database(session: Session, path: str) -> bool:
         # Fetch dataset
         statement = select(NodeDatasetInfo).where(NodeDatasetInfo.path == path)
         dataset_info = session.exec(statement).first()
-        path_url = f"obstorageapi.k8s.synthema.rid-intrasoft.eu/{path}"
+        path_url = f"{settings.MINIO_PUBLIC_URL}/{path}"
         if not dataset_info:
             return False
 

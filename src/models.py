@@ -206,32 +206,46 @@ class SyntheticDatasetGenerationRequestStatusTable(
 
 
 
+class SyntheticDataPool(SQLModel, table=True):
+    """Model for storing synthetic data pool records."""
+    __tablename__ = "synthetic_data_pools"
 
+    pool_id: str = Field(default_factory=lambda: str(uuid_pkg.uuid4()), primary_key=True)
+    use_case: str = Field(index=True)
+    sdg_model_name: str
+    node_name: str
+    status: str = Field(default="pending_approval")  # pending_approval, approved, rejected, published
+    n_samples: int
 
+    # Metadata (stored as JSON)
+    s3_uris: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
+    local_paths: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
+    validation_reports: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
 
+    # Approval workflow
+    approval_reason: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    rejected_by: Optional[str] = None
+    rejected_at: Optional[datetime] = None
 
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+class NodeInfo(SQLModel, table=True):
+    """Model for storing node capability/metadata."""
+    __tablename__ = "node_info"
 
+    node_name: str = Field(primary_key=True)
+    cpu_cores: Optional[int] = None
+    memory_gb: Optional[float] = None
+    storage_gb: Optional[float] = None
+    score: Optional[float] = None  # Composite score for node selection
+    capacity: Optional[str] = None
+    status: str = Field(default="active")  # active, inactive, degraded
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

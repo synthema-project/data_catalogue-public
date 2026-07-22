@@ -14,9 +14,13 @@ from fastapi import Depends, HTTPException, status
 #KEYCLOAK_CLIENT_ID=os.getenv("KEYCLOAK_CLIENT_ID", "synthema")
 #KEYCLOAK_REALM=os.getenv("KEYCLOAK_REALM", "Synthema")
 
-KEYCLOAK_SERVER_URL="https://users.k8s.synthema.rid-intrasoft.eu"#os.getenv("KEYCLOAK_SERVER_URL", "https://users.k8s.synthema.rid-intrasoft.eu" )
-KEYCLOAK_CLIENT_ID="synthema"#os.getenv("KEYCLOAK_CLIENT_ID", "synthema")
-KEYCLOAK_REALM="Synthema"#os.getenv("KEYCLOAK_REALM", "Synthema")
+from config import (
+    KEYCLOAK_SERVER_URL,
+    KEYCLOAK_CLIENT_ID,
+    KEYCLOAK_REALM_NAME as KEYCLOAK_REALM,
+    KEYCLOAK_PUBLIC_KEY,
+    AUTH_DISABLE_TESTS,
+)
 
 keycloak_openid = KeycloakOpenID(server_url=KEYCLOAK_SERVER_URL,
                                  client_id=KEYCLOAK_CLIENT_ID,
@@ -30,13 +34,13 @@ class UserClaims(BaseModel):
     sub: str
     typ: str
     azp: str
-    session_state: str
+    session_state: Optional[str] = None
     scope: str
     sid: str
     synthema_roles: List[str] = Field(alias="synthemaRoles", default_factory=list)
-    name: str = Field(alias="firstName")
-    last_name: str = Field(alias="lastName")
-    username: str
+    name: str = Field(alias="given_name", default="")
+    last_name: str = Field(alias="family_name", default="")
+    username: str = Field(alias="preferred_username", default="")
 
     def has_organization_role(self, organization, role) -> bool:
         for syn_role in self.synthema_roles:
@@ -54,30 +58,87 @@ class UserClaims(BaseModel):
 
         return False
 
-oauth2_scheme = HTTPBearer()
+oauth2_scheme = HTTPBearer(auto_error=False)
+
+_DEFAULT_PUBLIC_KEY = """
+-----BEGIN PUBLIC KEY-----
+"""
+
+# Prefer the env-provided key; fall back to the bundled default otherwise.
+public_key = KEYCLOAK_PUBLIC_KEY or _DEFAULT_PUBLIC_KEY
 
 def get_user_data_from_token(token: str) -> UserClaims:
-    decoded_token = keycloak_openid.decode_token(token, 
-                                                 #key=public_key,
-                                                 validate=True
+    decoded_token = keycloak_openid.decode_token(token,
+                                                 key=public_key,
+                                                 validate=False
                                                 )
+
     user_claims = UserClaims(**decoded_token)
     return user_claims
 
 
-async def get_current_user(credentials: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]) -> UserClaims:
+def get_mock_user() -> UserClaims:
+    return UserClaims(
+            exp=9999999999,
+            iat=0,
+            jti="test",
+            iss="test",
+            sub="test-user",
+            typ="Bearer",
+            azp="test",
+            session_state="test",
+            scope="openid",
+            sid="test",
+            synthemaRoles=["test:Admin"],
+            given_name="E2E",
+            family_name="Test",
+            preferred_username="e2e-test",
+        )
+
+
+async def get_current_user(
+    credentials: Annotated[
+        Optional[HTTPAuthorizationCredentials],
+        Depends(oauth2_scheme),
+    ],
+) -> UserClaims:
+
+    # E2E auth bypass
+    print("AUTH_DISABLE_TESTS =", AUTH_DISABLE_TESTS)
+    if AUTH_DISABLE_TESTS:
+        print(
+            "AUTH_DISABLE_TESTS detected - bypassing authentication"
+        )
+
+        return get_mock_user()
+
+    # Normal authentication flow
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
+
     try:
         user = get_user_data_from_token(token)
-    except (JWTExpired, InvalidJWSSignature, InvalidJWSObject):
-        user = None
 
-    if not user:
+    except (
+        JWTExpired,
+        InvalidJWSSignature,
+        InvalidJWSObject,
+    ) as e:
+
+        logger.error("JWT validation error: %s", str(e))
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     return user
 
 

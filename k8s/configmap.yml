@@ -3,5 +3,17 @@ kind: ConfigMap
 metadata:
   name: postgres-config
 data:
-  POSTGRES_HOST: mstorage-svc #db-service
-  POSTGRES_PORT: '5432' #80 #5432
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: '5432'
+
+  MINIO_PUBLIC_URL: minio.synthema.svc.cluster.local:9000
+  # MinIO access used to stream validation reports back to the dashboard.
+  MINIO_ENDPOINT: minio.synthema.svc.cluster.local:9000
+  MINIO_BUCKET: synthema-catalogue
+  MINIO_SECURE: 'false'
+  # Auth / Keycloak
+  KEYCLOAK_SERVER_URL: https://keycloak-url.example.com
+  KEYCLOAK_CLIENT_ID: synthema
+  KEYCLOAK_REALM_NAME: Synthema
+  AUTH_DISABLE_TESTS: 'false'
+  APP_PORT: '83'
