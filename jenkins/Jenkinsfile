@@ -4,6 +4,10 @@ pipeline {
             label 'jenkins-dev'
         }
     }
+    parameters {
+        string(name: 'K8S_NAMESPACE', defaultValue: 'synthema-dev', description: 'Existing target namespace for all service resources')
+    }
+    options { disableConcurrentBuilds() }
     environment {
         APP_NAME = "data-catalogue"
         MAJOR_RELEASE = 0.1
@@ -38,35 +42,13 @@ pipeline {
         // **************************************
         // *** Functional & Integration Tests ***
         // **************************************
-         stage("Func_Tests"){
-             steps {
-                 echo "***** Running Functional Tests *****"
-                 // Deploy the test image
-                 withKubeConfig([credentialsId: 'k8s-admin']) {
-                     sh '''
-                     cp k8s/manifest.yaml k8s/manifest-test.yml
-                     sed -e 's|DOCKER_TAG|test|g' k8s/manifest-test.yml | kubectl apply -f - --validate=false
-                     '''
-                 }
-                 sh 'sleep 5'
-                 // Execute the tests
-                script {
-                    withKubeConfig([credentialsId: 'k8s-admin']) {
-                         def nodePort = sh(script: 'kubectl get svc mstorage-svc -n synthema-dev -o jsonpath={.spec.ports[0].nodePort}', returnStdout: true).trim()
-                         //sh "curl -f http://49.13.149.57:${nodePort}/healthcheck"
-                         sh "curl -f http://data-catalogue.k8s.synthema.rid-intrasoft.eu:${nodePort}/healthcheck"
-                         sh "docker run --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test pytest tests/func.py" //test_functional.py"
-                     }
-                 }
-                 // Destroy the deployment
-                 withKubeConfig([credentialsId: 'k8s-admin']) {
-                     sh '''
-                     kubectl delete -f k8s/manifest-test.yml
-                     rm k8s/manifest-test.yml
-                     '''
-                }
-             }
-         }
+        stage("Func_Tests") {
+            steps {
+                // These are TestClient tests with mocked database sessions, not
+                // live-cluster tests. Never replace/delete the normal deployment.
+                sh 'docker run --rm ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test pytest tests/func.py'
+            }
+        }
 
         // *******************************
         // *** Push Images To Registry ***
@@ -99,10 +81,7 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'k8s-admin']) {
                     sh '''
-                    cp k8s/manifest.yaml k8s/manifest-staging-${DOCKER_TAG}.yml
-                    sed -e "s|DOCKER_TAG|${DOCKER_TAG}|g" k8s/manifest-staging-${DOCKER_TAG}.yml | kubectl apply -f -
-                    kubectl apply -f k8s/secret.yml 
-                    kubectl apply -f k8s/configmap.yml
+                    bash jenkins/deploy.sh
                     '''
                }
             }

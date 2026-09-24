@@ -8,7 +8,6 @@ metadata:
     env: dev
     team: synthema
     component: data-catalogue
-  namespace: synthema-dev
 spec:
   replicas: 1
   selector:
@@ -131,7 +130,6 @@ metadata:
     app: data-catalogue
     component: data-catalogue
   name: data-catalogue-service
-  namespace: synthema-dev
 spec:
   type: ClusterIP
   selector:
@@ -152,7 +150,6 @@ metadata:
     app: data-catalogue
     component: data-catalogue
   name: data-catalogue-ingress-rule
-  namespace: synthema-dev
 spec:
   ingressClassName: nginx
   rules:
