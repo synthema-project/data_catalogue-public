@@ -221,6 +221,7 @@ class SyntheticDataPool(SQLModel, table=True):
     s3_uris: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
     local_paths: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
     validation_reports: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
+    validation_details: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSONType))
 
     # Approval workflow
     approval_reason: Optional[str] = None

@@ -241,7 +241,8 @@ def migrate_schema_and_metadata_columns():
 
 
 def get_session():
-    return Session(engine)
+    with Session(engine) as session:
+        yield session
 
 
 

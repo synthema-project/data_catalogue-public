@@ -33,6 +33,8 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    from pool_reporting import migrate_pool_reporting
+    migrate_pool_reporting()
     add_new_metadata_columns()
     #add_use_case_column()
     add_datasets_column_to_usecases()
@@ -424,9 +426,14 @@ async def register_synthetic_pool(
 ):
     """Register a new synthetic data pool from client generation."""
     from models import SyntheticDataPool
+    from uuid import UUID
 
     try:
+        supplied_id = pool_metadata.get("pool_id")
+        if supplied_id is not None:
+            supplied_id = str(UUID(supplied_id))
         pool = SyntheticDataPool(
+            **({"pool_id": supplied_id} if supplied_id else {}),
             use_case=use_case,
             sdg_model_name=sdg_model_name,
             node_name=pool_metadata.get("node_name", "unknown"),
@@ -434,7 +441,9 @@ async def register_synthetic_pool(
             s3_uris=pool_metadata.get("s3_uris", {}),
             local_paths=pool_metadata.get("local_paths", {}),
             validation_reports=pool_metadata.get("validation_reports", {}),
-            status="pending_approval"
+            validation_details={"expected_nodes": pool_metadata.get("validation_nodes", []),
+                                "privacy_evaluated": False, "utility_reports": {}},
+            status="awaiting_reports" if pool_metadata.get("validation_phase") == "awaiting_reports" else "pending_approval"
         )
         session.add(pool)
         session.commit()
@@ -446,11 +455,29 @@ async def register_synthetic_pool(
             "pool_id": pool.pool_id,
             "use_case": pool.use_case,
             "status": pool.status,
+            "validated": pool.status in {"approved", "published"},
             "created_at": pool.created_at.isoformat()
         }
     except Exception as e:
         logger.error(f"Failed to register synthetic pool: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/synthetic-pools/{pool_id}/validation", tags=["synthetic-pools"])
+async def register_pool_utility_report(
+    pool_id: str, payload: Dict,
+    session: Session = Depends(get_session),
+    current_user: UserClaims = Depends(require_authentication),
+):
+    from models import SyntheticDataPool
+    from pool_reporting import attach_utility_report
+    pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).with_for_update().first()
+    if pool is None:
+        raise HTTPException(status_code=404, detail="Pool not found")
+    attach_utility_report(pool, payload)
+    session.add(pool)
+    session.commit()
+    return {"pool_id": pool.pool_id, "status": pool.status, "validated": False}
 
 
 @app.get("/synthetic-pools/{pool_id}", tags=["synthetic-pools"])
@@ -469,9 +496,11 @@ async def get_synthetic_pool(pool_id: str, session: Session = Depends(get_sessio
             "sdg_model_name": pool.sdg_model_name,
             "node_name": pool.node_name,
             "status": pool.status,
+            "validated": pool.status in {"approved", "published"},
             "n_samples": pool.n_samples,
             "s3_uris": pool.s3_uris,
             "validation_reports": pool.validation_reports,
+            "validation_details": pool.validation_details,
             "approval_reason": pool.approval_reason,
             "rejection_reason": pool.rejection_reason,
             "approved_by": pool.approved_by,
@@ -515,9 +544,11 @@ async def list_synthetic_pools(
                     "sdg_model_name": pool.sdg_model_name,
                     "node_name": pool.node_name,
                     "status": pool.status,
+                    "validated": pool.status in {"approved", "published"},
                     "n_samples": pool.n_samples,
                     "s3_uris": pool.s3_uris,
                     "validation_reports": pool.validation_reports,
+                    "validation_details": pool.validation_details,
                     "approval_reason": pool.approval_reason,
                     "rejection_reason": pool.rejection_reason,
                     "approved_by": pool.approved_by,
@@ -538,16 +569,26 @@ async def approve_synthetic_pool(pool_id: str, approved_by: str = "system", sess
     from models import SyntheticDataPool
     from datetime import datetime
 
+    committee_roles = {
+        "".join(ch for ch in role.rsplit(":", 1)[-1].lower() if ch.isalnum())
+        for role in current_user.synthema_roles
+    }
+    if "expertcommittee" not in committee_roles:
+        raise HTTPException(status_code=403, detail="Expert committee role required")
+
     try:
         pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).first()
         if not pool:
             raise HTTPException(status_code=404, detail=f"Pool {pool_id} not found")
 
+        if not pool.validation_reports:
+            raise HTTPException(status_code=409, detail="Validation reports are not available for this pool")
+
         if pool.status != "pending_approval":
             raise HTTPException(status_code=400, detail=f"Pool status is {pool.status}, cannot approve")
 
         pool.status = "approved"
-        pool.approved_by = approved_by
+        pool.approved_by = current_user.username
         pool.approved_at = datetime.utcnow()
         pool.updated_at = datetime.utcnow()
 
@@ -559,6 +600,7 @@ async def approve_synthetic_pool(pool_id: str, approved_by: str = "system", sess
         return {
             "pool_id": pool.pool_id,
             "status": pool.status,
+            "validated": pool.status in {"approved", "published"},
             "approved_by": pool.approved_by,
             "approved_at": pool.approved_at.isoformat()
         }
@@ -575,16 +617,23 @@ async def reject_synthetic_pool(pool_id: str, rejected_by: str = "system", reaso
     from models import SyntheticDataPool
     from datetime import datetime
 
+    committee_roles = {
+        "".join(ch for ch in role.rsplit(":", 1)[-1].lower() if ch.isalnum())
+        for role in current_user.synthema_roles
+    }
+    if "expertcommittee" not in committee_roles:
+        raise HTTPException(status_code=403, detail="Expert committee role required")
+
     try:
         pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).first()
         if not pool:
             raise HTTPException(status_code=404, detail=f"Pool {pool_id} not found")
 
-        if pool.status != "pending_approval":
+        if pool.status not in {"pending_approval", "awaiting_reports", "utility_reports_ready"}:
             raise HTTPException(status_code=400, detail=f"Pool status is {pool.status}, cannot reject")
 
         pool.status = "rejected"
-        pool.rejected_by = rejected_by
+        pool.rejected_by = current_user.username
         pool.rejection_reason = reason
         pool.rejected_at = datetime.utcnow()
         pool.updated_at = datetime.utcnow()
@@ -597,6 +646,7 @@ async def reject_synthetic_pool(pool_id: str, rejected_by: str = "system", reaso
         return {
             "pool_id": pool.pool_id,
             "status": pool.status,
+            "validated": pool.status in {"approved", "published"},
             "rejected_by": pool.rejected_by,
             "rejection_reason": pool.rejection_reason,
             "rejected_at": pool.rejected_at.isoformat()
