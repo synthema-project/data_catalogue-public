@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from main import app
 
 from main import app, get_session
+from auth import require_authentication, get_mock_user
 from sqlmodel import Session
 from unittest.mock import MagicMock
 
@@ -10,6 +11,7 @@ def fake_session():
     return MagicMock(spec=Session)
 
 app.dependency_overrides[get_session] = fake_session
+app.dependency_overrides[require_authentication] = get_mock_user
 
 client = TestClient(app)
 

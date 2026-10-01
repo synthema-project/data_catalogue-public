@@ -1,4 +1,6 @@
 import os
+import logging
+logger = logging.getLogger(__name__)
 from typing import List
 from keycloak import KeycloakOpenID
 from pydantic import BaseModel, Field
@@ -44,7 +46,7 @@ class UserClaims(BaseModel):
 
     def has_organization_role(self, organization, role) -> bool:
         for syn_role in self.synthema_roles:
-            org, rol = syn_role.split(":")
+            org, _, rol = syn_role.rpartition(":")
             if role == rol and organization == org:
                 return True
 
@@ -52,7 +54,7 @@ class UserClaims(BaseModel):
 
     def has_role(self, role) -> bool:
         for syn_role in self.synthema_roles:
-            org, rol = syn_role.split(":")
+            org, _, rol = syn_role.rpartition(":")
             if role == rol:
                 return True
 
@@ -68,9 +70,16 @@ _DEFAULT_PUBLIC_KEY = """
 public_key = KEYCLOAK_PUBLIC_KEY or _DEFAULT_PUBLIC_KEY
 
 def get_user_data_from_token(token: str) -> UserClaims:
+    from jwcrypto import jwk
+    key = None
+    if KEYCLOAK_PUBLIC_KEY:
+        pem = KEYCLOAK_PUBLIC_KEY
+        if "BEGIN PUBLIC KEY" not in pem:
+            pem = "-----BEGIN PUBLIC KEY-----\n" + pem + "\n-----END PUBLIC KEY-----"
+        key = jwk.JWK.from_pem(pem.encode())
     decoded_token = keycloak_openid.decode_token(token,
-                                                 key=public_key,
-                                                 validate=False
+                                                 key=key,
+                                                 validate=True
                                                 )
 
     user_claims = UserClaims(**decoded_token)
@@ -126,6 +135,7 @@ async def get_current_user(
         user = get_user_data_from_token(token)
 
     except (
+        ValueError,
         JWTExpired,
         InvalidJWSSignature,
         InvalidJWSObject,

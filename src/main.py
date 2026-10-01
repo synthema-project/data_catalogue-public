@@ -1,3 +1,4 @@
+from pool_review import visible_reports, review_summary, decide
 from fastapi import FastAPI, HTTPException, Request, Depends, Body
 from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
@@ -33,6 +34,8 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    from database import migrate_dataset_partitions
+    migrate_dataset_partitions()
     from pool_reporting import migrate_pool_reporting
     migrate_pool_reporting()
     add_new_metadata_columns()
@@ -57,7 +60,10 @@ async def save_dataset_info_to_database_endpoint(
 ):
 #async def save_dataset_info_to_database_endpoint(node : str, disease : str, path : str, session: Session = Depends(get_session)):
     try:
-        #logger.info(f"Saving dataset info to the database for node: {node_dataset.node}, disease: {node_dataset.disease}")
+        if not current_user.has_role('Admin') and not any(
+            role.rpartition(':')[0] == node_dataset.node for role in current_user.synthema_roles
+        ):
+            raise HTTPException(403, 'Your account cannot register datasets for this node')
         logger.info(f"Saving metadata for node={node_dataset.node}, use_case={node_dataset.use_case}")
         
         # Save per-dataset metadata
@@ -428,6 +434,7 @@ async def register_synthetic_pool(
     from models import SyntheticDataPool
     from uuid import UUID
 
+    require_validation_service(current_user)
     try:
         supplied_id = pool_metadata.get("pool_id")
         if supplied_id is not None:
@@ -440,10 +447,13 @@ async def register_synthetic_pool(
             n_samples=pool_metadata.get("n_samples", 0),
             s3_uris=pool_metadata.get("s3_uris", {}),
             local_paths=pool_metadata.get("local_paths", {}),
-            validation_reports=pool_metadata.get("validation_reports", {}),
+            validation_reports={},
             validation_details={"expected_nodes": pool_metadata.get("validation_nodes", []),
-                                "privacy_evaluated": False, "utility_reports": {}},
-            status="awaiting_reports" if pool_metadata.get("validation_phase") == "awaiting_reports" else "pending_approval"
+                                "privacy_evaluated": False, "utility_reports": {},
+                                "required_reports": ["utility", "privacy", "fidelity"],
+                                "dataset_snapshot": pool_metadata.get("dataset_snapshot"),
+                                "task_id": pool_metadata.get("task_id")},
+            status="awaiting_reports"
         )
         session.add(pool)
         session.commit()
@@ -470,11 +480,27 @@ async def register_pool_utility_report(
     current_user: UserClaims = Depends(require_authentication),
 ):
     from models import SyntheticDataPool
-    from pool_reporting import attach_utility_report
+    from pool_reporting import attach_report, start_review
     pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).with_for_update().first()
     if pool is None:
         raise HTTPException(status_code=404, detail="Pool not found")
-    attach_utility_report(pool, payload)
+    require_validation_service(current_user)
+    from report_storage import require_private_bucket
+    import os
+    try:
+        require_private_bucket(_get_minio_client(), os.getenv('MINIO_REPORT_BUCKET', 'synthetic-validation-reports'))
+    except Exception as error:
+        raise HTTPException(503, 'Private report storage is unavailable or permits anonymous access') from error
+    attach_report(pool, payload)
+    session.add(pool)
+    session.commit()  # Preserve reports even if the directory is unavailable.
+    # Commit releases the row lock. Reacquire it before freezing the roster.
+    pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).with_for_update().populate_existing().first()
+    if pool.status == "awaiting_reviewers":
+        try:
+            start_review(pool)
+        except HTTPException as error:
+            logger.warning("Pool reports saved; reviewer snapshot pending: %s", error.detail)
     session.add(pool)
     session.commit()
     return {"pool_id": pool.pool_id, "status": pool.status, "validated": False}
@@ -499,8 +525,8 @@ async def get_synthetic_pool(pool_id: str, session: Session = Depends(get_sessio
             "validated": pool.status in {"approved", "published"},
             "n_samples": pool.n_samples,
             "s3_uris": pool.s3_uris,
-            "validation_reports": pool.validation_reports,
-            "validation_details": pool.validation_details,
+            "validation_reports": visible_reports(pool, current_user),
+            "validation_details": review_summary(pool, current_user),
             "approval_reason": pool.approval_reason,
             "rejection_reason": pool.rejection_reason,
             "approved_by": pool.approved_by,
@@ -547,8 +573,8 @@ async def list_synthetic_pools(
                     "validated": pool.status in {"approved", "published"},
                     "n_samples": pool.n_samples,
                     "s3_uris": pool.s3_uris,
-                    "validation_reports": pool.validation_reports,
-                    "validation_details": pool.validation_details,
+                    "validation_reports": visible_reports(pool, current_user),
+                    "validation_details": review_summary(pool, current_user),
                     "approval_reason": pool.approval_reason,
                     "rejection_reason": pool.rejection_reason,
                     "approved_by": pool.approved_by,
@@ -563,102 +589,59 @@ async def list_synthetic_pools(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/synthetic-pools/{pool_id}/approve", tags=["synthetic-pools"])
-async def approve_synthetic_pool(pool_id: str, approved_by: str = "system", session: Session = Depends(get_session), current_user: UserClaims = Depends(require_authentication)):
-    """Approve a synthetic data pool for publication."""
+def require_validation_service(user):
+    if not user.has_role("ValidationService"):
+        raise HTTPException(403, "Validation service role required")
+
+
+@app.post("/synthetic-pools/{pool_id}/start-review", tags=["synthetic-pools"])
+async def begin_pool_review(pool_id: str, session: Session = Depends(get_session),
+                            current_user: UserClaims = Depends(require_authentication)):
     from models import SyntheticDataPool
-    from datetime import datetime
+    from pool_reporting import start_review
+    require_validation_service(current_user)
+    pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).with_for_update().first()
+    if pool is None:
+        raise HTTPException(404, "Pool not found")
+    start_review(pool)
+    session.add(pool)
+    session.commit()
+    return {"pool_id": pool_id, "status": pool.status}
 
-    committee_roles = {
-        "".join(ch for ch in role.rsplit(":", 1)[-1].lower() if ch.isalnum())
-        for role in current_user.synthema_roles
-    }
-    if "expertcommittee" not in committee_roles:
-        raise HTTPException(status_code=403, detail="Expert committee role required")
 
-    try:
-        pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).first()
-        if not pool:
-            raise HTTPException(status_code=404, detail=f"Pool {pool_id} not found")
-
-        if not pool.validation_reports:
-            raise HTTPException(status_code=409, detail="Validation reports are not available for this pool")
-
-        if pool.status != "pending_approval":
-            raise HTTPException(status_code=400, detail=f"Pool status is {pool.status}, cannot approve")
-
+def record_pool_decision(session, pool_id, user, decision, reason=""):
+    from models import SyntheticDataPool
+    pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).with_for_update().first()
+    if pool is None:
+        raise HTTPException(404, "Pool not found")
+    decide(pool, user, decision, reason)
+    if pool.status == "approved":
+        pool.status = "approval_pending_storage"
+    session.add(pool)
+    session.commit()
+    from pool_storage import synchronize_validation_tag
+    if pool.status in {"approval_pending_storage", "rejected", "published"}:
+        synchronize_validation_tag(pool, _get_minio_client())
+    if pool.status == "approval_pending_storage":
         pool.status = "approved"
-        pool.approved_by = current_user.username
-        pool.approved_at = datetime.utcnow()
-        pool.updated_at = datetime.utcnow()
-
         session.add(pool)
         session.commit()
-
-        logger.info(f"Pool {pool_id} approved by {approved_by}")
-
-        return {
-            "pool_id": pool.pool_id,
-            "status": pool.status,
+    return {"pool_id": pool_id, "status": pool.status,
             "validated": pool.status in {"approved", "published"},
-            "approved_by": pool.approved_by,
-            "approved_at": pool.approved_at.isoformat()
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to approve pool {pool_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            "validation_details": review_summary(pool, user)}
+
+
+@app.post("/synthetic-pools/{pool_id}/approve", tags=["synthetic-pools"])
+async def approve_synthetic_pool(pool_id: str, session: Session = Depends(get_session),
+                                 current_user: UserClaims = Depends(require_authentication)):
+    return record_pool_decision(session, pool_id, current_user, "approved")
 
 
 @app.post("/synthetic-pools/{pool_id}/reject", tags=["synthetic-pools"])
-async def reject_synthetic_pool(pool_id: str, rejected_by: str = "system", reason: str = "", session: Session = Depends(get_session), current_user: UserClaims = Depends(require_authentication)):
-    """Reject a synthetic data pool."""
-    from models import SyntheticDataPool
-    from datetime import datetime
+async def reject_synthetic_pool(pool_id: str, reason: str = "", session: Session = Depends(get_session),
+                                current_user: UserClaims = Depends(require_authentication)):
+    return record_pool_decision(session, pool_id, current_user, "rejected", reason)
 
-    committee_roles = {
-        "".join(ch for ch in role.rsplit(":", 1)[-1].lower() if ch.isalnum())
-        for role in current_user.synthema_roles
-    }
-    if "expertcommittee" not in committee_roles:
-        raise HTTPException(status_code=403, detail="Expert committee role required")
-
-    try:
-        pool = session.query(SyntheticDataPool).filter(SyntheticDataPool.pool_id == pool_id).first()
-        if not pool:
-            raise HTTPException(status_code=404, detail=f"Pool {pool_id} not found")
-
-        if pool.status not in {"pending_approval", "awaiting_reports", "utility_reports_ready"}:
-            raise HTTPException(status_code=400, detail=f"Pool status is {pool.status}, cannot reject")
-
-        pool.status = "rejected"
-        pool.rejected_by = current_user.username
-        pool.rejection_reason = reason
-        pool.rejected_at = datetime.utcnow()
-        pool.updated_at = datetime.utcnow()
-
-        session.add(pool)
-        session.commit()
-
-        logger.info(f"Pool {pool_id} rejected by {rejected_by}. Reason: {reason}")
-
-        return {
-            "pool_id": pool.pool_id,
-            "status": pool.status,
-            "validated": pool.status in {"approved", "published"},
-            "rejected_by": pool.rejected_by,
-            "rejection_reason": pool.rejection_reason,
-            "rejected_at": pool.rejected_at.isoformat()
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to reject pool {pool_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ============ Node Capability Endpoints ============
 
 @app.post("/nodes", tags=["nodes"])
 async def register_or_update_node(
@@ -824,7 +807,7 @@ async def get_synthetic_pool_report(
     if not pool:
         raise HTTPException(status_code=404, detail=f"Pool {pool_id} not found")
 
-    reports = pool.validation_reports or {}
+    reports = visible_reports(pool, current_user)
     uri = reports.get(report_key)
     if not uri:
         raise HTTPException(
@@ -854,66 +837,53 @@ async def get_synthetic_pool_report(
 async def healthcheck():
     return {"status": "ok"}
 
+
+@app.post("/evaluation-configurations/{use_case}", tags=["evaluation-configurations"])
+async def publish_evaluation_configuration(use_case: str, payload: Dict,
+    session: Session = Depends(get_session), current_user: UserClaims = Depends(require_authentication)):
+    from models import EvaluationDocuments
+    from evaluation_config import validate_documents
+    import io, json, os
+    if not current_user.has_role("Admin"):
+        raise HTTPException(403, "Administrator role required to publish evaluation settings")
+    metadata, evaluation = payload.get("metadata", {}), payload.get("evaluation", {})
+    if payload.get("draft"):
+        raise HTTPException(422, "Review the clinical configuration candidate before publishing it")
+    version = validate_documents(use_case, metadata, evaluation)
+    existing = session.get(EvaluationDocuments, version)
+    if existing:
+        return existing.model_dump()
+    bucket = os.getenv("MINIO_CONFIGURATION_BUCKET", "evaluation-configurations")
+    client = _get_minio_client()
+    if not client.bucket_exists(bucket):
+        client.make_bucket(bucket)
+    uris = {}
+    for name, document in [("metadata.json", metadata), ("evaluation_config.json", evaluation)]:
+        key = f"{use_case}/{version}/{name}"
+        data = json.dumps(document).encode()
+        client.put_object(bucket, key, io.BytesIO(data), len(data), content_type="application/json")
+        uris[name] = f"s3://{bucket}/{key}"
+    record = EvaluationDocuments(version=version, use_case=use_case,
+        documents={"metadata": metadata, "evaluation": evaluation}, s3_uris=uris)
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record.model_dump()
+
+
+@app.get("/evaluation-configurations/{use_case}", tags=["evaluation-configurations"])
+async def get_evaluation_configuration(use_case: str, version: Optional[str] = None,
+    session: Session = Depends(get_session), current_user: UserClaims = Depends(require_authentication)):
+    from models import EvaluationDocuments
+    query = session.query(EvaluationDocuments).filter(EvaluationDocuments.use_case == use_case)
+    if version:
+        query = query.filter(EvaluationDocuments.version == version)
+    record = query.order_by(EvaluationDocuments.created_at.desc()).first()
+    if not record:
+        raise HTTPException(404, "No published evaluation configuration for this disease")
+    return record.model_dump()
+
+
 if __name__ == "__main__":
     from config import settings
     uvicorn.run(app, host="0.0.0.0", port=settings.APP_PORT)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -42,6 +42,12 @@ pipeline {
         // **************************************
         // *** Functional & Integration Tests ***
         // **************************************
+        //stage("Pool_Validation_Tests") {
+        //    steps {
+        //        sh 'docker run --rm -e CATALOGUE_SOURCE=/app -v "$WORKSPACE/tests:/validation-tests:ro" ${DOCKER_REG}${DOCKER_REPO}${APP_NAME}:test python -m pytest --import-mode=prepend /validation-tests -q'
+        //    }
+        //}
+
         stage("Func_Tests") {
             steps {
                 // These are TestClient tests with mocked database sessions, not

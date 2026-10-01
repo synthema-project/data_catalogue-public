@@ -257,3 +257,11 @@ def get_session():
 
 
 
+
+
+def migrate_dataset_partitions():
+    with engine.begin() as connection:
+        for name, kind in [('dataset_role', 'VARCHAR'), ('collection_id', 'VARCHAR'),
+                           ('configuration_version', 'VARCHAR'), ('dataset_meta', 'JSON'),
+                           ('evaluation_configuration', 'JSON')]:
+            connection.execute(text(f"ALTER TABLE data_catalogue ADD COLUMN IF NOT EXISTS {name} {kind}"))

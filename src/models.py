@@ -72,6 +72,12 @@ class NodeDatasetInfo(SQLModel, table=True, __tablename__="data_catalogue"):
     path: str
     use_case: str # to change into use_case
 
+    dataset_role: Optional[str] = None
+    collection_id: Optional[str] = None
+    configuration_version: Optional[str] = None
+    dataset_meta: Optional[dict] = Field(default=None, sa_column=Column(JSONType))
+    evaluation_configuration: Optional[dict] = Field(default=None, sa_column=Column(JSONType))
+
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     @field_serializer("timestamp")
     def serialize_ts(self, ts: datetime):
@@ -250,3 +256,12 @@ class NodeInfo(SQLModel, table=True):
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class EvaluationDocuments(SQLModel, table=True):
+    __tablename__ = "evaluation_documents"
+    version: str = Field(primary_key=True)
+    use_case: str = Field(index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    documents: dict = Field(sa_column=Column(JSONType))
+    s3_uris: dict = Field(sa_column=Column(JSONType))
